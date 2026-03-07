@@ -121,6 +121,7 @@ export async function testConnection(apiKey, model = DEFAULT_MODEL) {
     if (provider === 'anthropic') {
       headers['x-api-key'] = apiKey;
       headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
     } else {
       headers.Authorization = `Bearer ${apiKey}`;
     }
@@ -161,6 +162,7 @@ export async function nonStreamingGenerate(apiKey, messages, systemPrompt, confi
   if (provider === 'anthropic') {
     headers['x-api-key'] = apiKey;
     headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
   } else {
     headers.Authorization = `Bearer ${apiKey}`;
   }
@@ -206,6 +208,7 @@ export async function streamMessage(apiKey, messages, systemPrompt, config, onCh
     if (provider === 'anthropic') {
       headers['x-api-key'] = apiKey;
       headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
     } else {
       headers.Authorization = `Bearer ${apiKey}`;
     }
