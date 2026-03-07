@@ -1,5 +1,5 @@
 import { Storage } from './storage.js';
-import { streamMessage, stopStreaming, nonStreamingGenerate } from './gemini.js';
+import { streamMessage, stopStreaming, nonStreamingGenerate, testConnection } from './gemini.js';
 import { renderMarkdown } from './markdown.js';
 import {
   applyAccentColor,
@@ -203,6 +203,34 @@ function getApiKey() {
 function setApiKey(raw) {
   localStorage.setItem(LS.apiKey, xorObfuscate(raw));
   state.apiKey = raw;
+}
+
+function maskApiKey(key) {
+  const value = String(key || '').trim();
+  if (!value) return 'Not configured';
+  if (value.length <= 10) return 'Configured';
+  return `${value.slice(0, 7)}...${value.slice(-4)}`;
+}
+
+function refreshApiKeyStatus() {
+  if (!dom.apiKeyStatus) return;
+  const configuredKey = window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || '';
+  const localKey = xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
+  const active = getApiKey();
+
+  if (configuredKey?.trim()) {
+    dom.apiKeyStatus.textContent = `Using config key: ${maskApiKey(active)}`;
+    if (dom.toggleApiKeyBtn) dom.toggleApiKeyBtn.textContent = 'Clear Local Key';
+    return;
+  }
+
+  if (localKey?.trim()) {
+    dom.apiKeyStatus.textContent = `Using local key: ${maskApiKey(localKey)}`;
+    if (dom.toggleApiKeyBtn) dom.toggleApiKeyBtn.textContent = 'Clear Local Key';
+  } else {
+    dom.apiKeyStatus.textContent = 'No Claude key configured';
+    if (dom.toggleApiKeyBtn) dom.toggleApiKeyBtn.textContent = 'Clear Local Key';
+  }
 }
 
 async function ensureApiKeyConfigured() {
@@ -1937,6 +1965,7 @@ function downloadText(name, content) {
 function openSettings(triggerEl) {
   state.settingsTrigger = triggerEl || document.activeElement;
   dom.settingsPanel.classList.add('open');
+  refreshApiKeyStatus();
   dom.settingsPanel.focus();
 }
 
@@ -2278,6 +2307,59 @@ function bindEventListeners() {
 
   dom.openSettingsBtn.addEventListener('click', () => openSettings(dom.openSettingsBtn));
   dom.closeSettingsBtn.addEventListener('click', closeSettings);
+
+  dom.updateApiKeyBtn?.addEventListener('click', async () => {
+    const current = xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
+    const next = await uiPrompt(
+      'Paste your Claude API key. It is stored only in this browser local storage.',
+      current,
+      'Set Claude API Key',
+      'Save Key'
+    );
+    if (!next) return;
+    setApiKey(next);
+    if (dom.apiKeyInput) dom.apiKeyInput.value = next;
+    refreshApiKeyStatus();
+    toast('Claude API key saved locally.', 2200, 'success');
+  });
+
+  dom.toggleApiKeyBtn?.addEventListener('click', async () => {
+    const localKey = xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
+    if (!localKey) {
+      toast('No local key to clear.', 1800, 'info');
+      return;
+    }
+    if (!await uiConfirm('Clear locally stored Claude API key?', 'Clear API key', 'Clear')) return;
+    localStorage.removeItem(LS.apiKey);
+    state.apiKey = getApiKey();
+    if (dom.apiKeyInput) dom.apiKeyInput.value = state.apiKey;
+    refreshApiKeyStatus();
+    toast('Local Claude key cleared.', 2200, 'success');
+  });
+
+  dom.testApiBtn?.addEventListener('click', async () => {
+    state.apiKey = getApiKey();
+    if (!state.apiKey) {
+      toast('No API key configured yet.', 2200, 'warning');
+      return;
+    }
+    const prevText = dom.testApiBtn.textContent;
+    dom.testApiBtn.textContent = 'Testing...';
+    dom.testApiBtn.setAttribute('disabled', 'disabled');
+    try {
+      const model = localStorage.getItem(LS.model) || DEFAULTS.model;
+      const result = await testConnection(state.apiKey, model);
+      if (result.ok) toast('API connection successful.', 2200, 'success');
+      else toast(`API test failed: ${result.message || 'Unknown error'}`, 4200, 'warning');
+    } catch (error) {
+      toast(`API test failed: ${error?.message || 'Unknown error'}`, 4200, 'warning');
+    } finally {
+      dom.testApiBtn.textContent = prevText;
+      dom.testApiBtn.removeAttribute('disabled');
+      refreshApiKeyStatus();
+    }
+  });
+
   dom.openMemoryBtn.addEventListener('click', () => openMemory(dom.openMemoryBtn));
   if (dom.openStarredBtn) dom.openStarredBtn.addEventListener('click', () => openStarred(dom.openStarredBtn));
   if (dom.openPinboardBtn) dom.openPinboardBtn.addEventListener('click', () => openPinboard(dom.openPinboardBtn));
@@ -2914,6 +2996,7 @@ function collectDomRefs() {
     toggleApiKeyBtn: $('toggleApiKeyBtn'),
     updateApiKeyBtn: $('updateApiKeyBtn'),
     testApiBtn: $('testApiBtn'),
+    apiKeyStatus: $('apiKeyStatus'),
     themeSegment: $('themeSegment'),
     accentSwatches: $('accentSwatches'),
     fontSegment: $('fontSegment'),
@@ -3047,6 +3130,7 @@ async function init() {
   state.folderMap = jsonSetting(LS.folderMap, {});
   state.activeFolderFilter = localStorage.getItem(LS.activeFolderFilter) || 'all';
   if (dom.apiKeyInput) dom.apiKeyInput.value = state.apiKey;
+  refreshApiKeyStatus();
 
   loadSettingsToDom();
   updateWelcomeHeading();

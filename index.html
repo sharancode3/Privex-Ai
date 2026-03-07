@@ -181,9 +181,14 @@
     </div>
     <div class="panel-body">
       <input id="apiKeyInput" type="hidden">
-      <button id="toggleApiKeyBtn" class="hidden" aria-hidden="true">Toggle</button>
-      <button id="updateApiKeyBtn" class="hidden" aria-hidden="true">Update</button>
-      <button id="testApiBtn" class="hidden" aria-hidden="true">Test</button>
+
+      <section>
+        <h4>API Key</h4>
+        <p id="apiKeyStatus" class="muted">No key configured</p>
+        <button id="updateApiKeyBtn" class="btn btn-outline">Set or Update Claude Key</button>
+        <button id="testApiBtn" class="btn btn-outline">Test API Connection</button>
+        <button id="toggleApiKeyBtn" class="btn btn-danger">Clear Local Key</button>
+      </section>
 
       <section>
         <h4>Appearance</h4>
