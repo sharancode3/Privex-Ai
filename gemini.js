@@ -2,7 +2,8 @@ const OPENAI_CHAT_COMPLETIONS = 'https://api.openai.com/v1/chat/completions';
 const XAI_CHAT_COMPLETIONS = 'https://api.x.ai/v1/chat/completions';
 const GEMINI_CHAT_COMPLETIONS = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-3-5-sonnet-latest';
+const HUGGINGFACE_CHAT_COMPLETIONS = 'https://router.huggingface.co/v1/chat/completions';
+const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
 
 let currentAbortController = null;
 
@@ -29,9 +30,15 @@ function getProvider(apiKey, config = {}) {
   const provider = String(window?.PRIVEX_CONFIG?.provider || '').toLowerCase();
   const key = String(apiKey || '');
 
+  if (model.startsWith('claude') || key.startsWith('sk-ant-')) return 'anthropic';
+  if (model.startsWith('gemini') || key.startsWith('AIza')) return 'gemini';
+  if (model.startsWith('grok') || key.startsWith('xai-')) return 'xai';
+  if (key.startsWith('hf_')) return 'huggingface';
+
   if (provider === 'anthropic' || provider === 'claude') return 'anthropic';
   if (provider === 'gemini') return 'gemini';
   if (provider === 'xai') return 'xai';
+  if (provider === 'huggingface' || provider === 'hf') return 'huggingface';
   if (model.startsWith('claude') || key.startsWith('sk-ant-')) return 'anthropic';
   if (model.startsWith('gemini') || key.startsWith('AIza')) return 'gemini';
   if (model.startsWith('grok') || key.startsWith('xai-')) return 'xai';
@@ -68,6 +75,10 @@ function resolveEndpoint(apiKey, config = {}) {
   if (provider === 'anthropic' && window?.PRIVEX_CONFIG?.anthropicBaseUrl) {
     return `${window.PRIVEX_CONFIG.anthropicBaseUrl.replace(/\/$/, '')}/messages`;
   }
+  if (provider === 'huggingface' && (window?.PRIVEX_CONFIG?.huggingFaceBaseUrl || window?.PRIVEX_CONFIG?.huggingfaceBaseUrl)) {
+    const base = window.PRIVEX_CONFIG.huggingFaceBaseUrl || window.PRIVEX_CONFIG.huggingfaceBaseUrl;
+    return `${base.replace(/\/$/, '')}/chat/completions`;
+  }
   if (window?.PRIVEX_CONFIG?.geminiBaseUrl) {
     return `${window.PRIVEX_CONFIG.geminiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   }
@@ -82,6 +93,9 @@ function resolveEndpoint(apiKey, config = {}) {
   }
   if (provider === 'xai') {
     return XAI_CHAT_COMPLETIONS;
+  }
+  if (provider === 'huggingface') {
+    return HUGGINGFACE_CHAT_COMPLETIONS;
   }
   return OPENAI_CHAT_COMPLETIONS;
 }

@@ -241,7 +241,7 @@ export const Storage = {
       title: data.title || 'New Conversation',
       createdAt: now,
       updatedAt: now,
-      model: data.model || 'claude-3-5-sonnet-latest',
+      model: data.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct',
       messageCount: 0,
       isPinned: false,
       isArchived: false,

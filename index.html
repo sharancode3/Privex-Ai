@@ -153,13 +153,13 @@
               <span class="status-sep">·</span>
               <button id="incognitoChip" class="status-chip" type="button"><span class="dot"></span>Incognito</button>
               <span class="status-sep">·</span>
-              <span id="modelInfo" class="model-label">Claude 3.5 Sonnet</span>
+              <span id="modelInfo" class="model-label">Llama 3.1 8B Instruct</span>
               <span id="tokenCount" class="token-count">~0 tokens</span>
               <select id="modelSelect" class="hidden" aria-label="Select model">
-                <option value="claude-3-5-sonnet-latest">Claude 3.5 Sonnet</option>
-                <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-                <option value="claude-3-7-sonnet-latest">Claude 3.7 Sonnet</option>
-                <option value="claude-3-5-haiku-latest">Claude 3.5 Haiku</option>
+                <option value="meta-llama/Meta-Llama-3.1-8B-Instruct">Llama 3.1 8B Instruct</option>
+                <option value="Qwen/Qwen2.5-72B-Instruct">Qwen 2.5 72B Instruct</option>
+                <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral 8x7B Instruct</option>
+                <option value="deepseek-ai/DeepSeek-R1">DeepSeek R1</option>
               </select>
               <button id="personaPickerBtn" class="hidden" aria-hidden="true" type="button">Persona</button>
             </div>
@@ -185,7 +185,7 @@
       <section>
         <h4>API Key</h4>
         <p id="apiKeyStatus" class="muted">No key configured</p>
-        <button id="updateApiKeyBtn" class="btn btn-outline">Set or Update Claude Key</button>
+        <button id="updateApiKeyBtn" class="btn btn-outline">Set or Update API Key</button>
         <button id="testApiBtn" class="btn btn-outline">Test API Connection</button>
         <button id="toggleApiKeyBtn" class="btn btn-danger">Clear Local Key</button>
       </section>
@@ -225,10 +225,10 @@
         <h4>AI Settings</h4>
         <label>Model</label>
         <select id="settingsModelSelect">
-          <option value="claude-3-5-sonnet-latest">Claude 3.5 Sonnet</option>
-          <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-          <option value="claude-3-7-sonnet-latest">Claude 3.7 Sonnet</option>
-          <option value="claude-3-5-haiku-latest">Claude 3.5 Haiku</option>
+          <option value="meta-llama/Meta-Llama-3.1-8B-Instruct">Llama 3.1 8B Instruct</option>
+          <option value="Qwen/Qwen2.5-72B-Instruct">Qwen 2.5 72B Instruct</option>
+          <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral 8x7B Instruct</option>
+          <option value="deepseek-ai/DeepSeek-R1">DeepSeek R1</option>
         </select>
         <label>Temperature <span id="tempValue">0.9</span></label>
         <input id="tempSlider" type="range" min="0" max="1" step="0.1">

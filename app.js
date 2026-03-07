@@ -47,7 +47,7 @@ const DEFAULTS = {
   streaming: true,
   memoryEnabled: true,
   showTimestamps: false,
-  model: 'claude-3-5-sonnet-latest',
+  model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
   temperature: 0.9,
   maxTokens: 8192,
   incognito: false,
@@ -193,7 +193,7 @@ function xorDeobfuscate(value) {
 }
 
 function getApiKey() {
-  const configured = window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || window.PRIVEX_CONFIG?.geminiApiKey || window.PRIVEX_CONFIG?.xaiApiKey || window.PRIVEX_CONFIG?.openaiApiKey;
+  const configured = window.PRIVEX_CONFIG?.huggingFaceApiKey || window.PRIVEX_CONFIG?.huggingfaceApiKey || window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || window.PRIVEX_CONFIG?.geminiApiKey || window.PRIVEX_CONFIG?.xaiApiKey || window.PRIVEX_CONFIG?.openaiApiKey;
   if (configured && typeof configured === 'string' && configured.trim()) {
     return configured.trim();
   }
@@ -214,7 +214,7 @@ function maskApiKey(key) {
 
 function refreshApiKeyStatus() {
   if (!dom.apiKeyStatus) return;
-  const configuredKey = window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || '';
+  const configuredKey = window.PRIVEX_CONFIG?.huggingFaceApiKey || window.PRIVEX_CONFIG?.huggingfaceApiKey || window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || '';
   const localKey = xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
   const active = getApiKey();
 
@@ -228,7 +228,7 @@ function refreshApiKeyStatus() {
     dom.apiKeyStatus.textContent = `Using local key: ${maskApiKey(localKey)}`;
     if (dom.toggleApiKeyBtn) dom.toggleApiKeyBtn.textContent = 'Clear Local Key';
   } else {
-    dom.apiKeyStatus.textContent = 'No Claude key configured';
+    dom.apiKeyStatus.textContent = 'No API key configured';
     if (dom.toggleApiKeyBtn) dom.toggleApiKeyBtn.textContent = 'Clear Local Key';
   }
 }
@@ -238,20 +238,20 @@ async function ensureApiKeyConfigured() {
   if (state.apiKey) return true;
 
   const entered = await uiPrompt(
-    'Paste your Claude API key. It is saved only in this browser local storage.',
+    'Paste your API key (Hugging Face keys usually start with hf_). It is saved only in this browser local storage.',
     '',
-    'Set Claude API Key',
+    'Set API Key',
     'Save Key'
   );
 
   if (!entered) {
-    toast('Claude API key is required to send messages.', 3200, 'warning');
+    toast('An API key is required to send messages.', 3200, 'warning');
     return false;
   }
 
   setApiKey(entered);
   if (dom.apiKeyInput) dom.apiKeyInput.value = entered;
-  toast('Claude API key saved locally.', 2200, 'success');
+  toast('API key saved locally.', 2200, 'success');
   return true;
 }
 
@@ -261,6 +261,10 @@ function estimateTokens(text) {
 
 function prettyModelName(model) {
   const val = String(model || '').toLowerCase();
+  if (val.includes('meta-llama-3.1-8b-instruct')) return 'Llama 3.1 8B Instruct';
+  if (val.includes('qwen2.5-72b-instruct')) return 'Qwen 2.5 72B Instruct';
+  if (val.includes('mixtral-8x7b-instruct')) return 'Mixtral 8x7B Instruct';
+  if (val.includes('deepseek-r1')) return 'DeepSeek R1';
   if (val.includes('claude-opus-4-1')) return 'Claude Opus 4.1';
   if (val.includes('claude-opus-4')) return 'Claude Opus 4';
   if (val.includes('claude-sonnet-4')) return 'Claude Sonnet 4';
@@ -2206,7 +2210,7 @@ async function updateStorageStats() {
     `Pending queued messages: ${pendingCount}    Est. storage: ${stats.estimatedMB} MB`,
     `Last local activity: ${lastActivity}`,
     'Data stored locally: conversations, messages, memories.',
-    'Data sent to Claude API: conversation content for model processing only.',
+    'Data sent to selected AI provider API: conversation content for model processing only.',
     'Data sent to us: none (no analytics, no tracking, no servers).',
   ].map((line) => `<div>${line}</div>`).join('');
 }
@@ -2311,16 +2315,16 @@ function bindEventListeners() {
   dom.updateApiKeyBtn?.addEventListener('click', async () => {
     const current = xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
     const next = await uiPrompt(
-      'Paste your Claude API key. It is stored only in this browser local storage.',
+      'Paste your API key. It is stored only in this browser local storage.',
       current,
-      'Set Claude API Key',
+      'Set API Key',
       'Save Key'
     );
     if (!next) return;
     setApiKey(next);
     if (dom.apiKeyInput) dom.apiKeyInput.value = next;
     refreshApiKeyStatus();
-    toast('Claude API key saved locally.', 2200, 'success');
+    toast('API key saved locally.', 2200, 'success');
   });
 
   dom.toggleApiKeyBtn?.addEventListener('click', async () => {
@@ -2329,12 +2333,12 @@ function bindEventListeners() {
       toast('No local key to clear.', 1800, 'info');
       return;
     }
-    if (!await uiConfirm('Clear locally stored Claude API key?', 'Clear API key', 'Clear')) return;
+    if (!await uiConfirm('Clear locally stored API key?', 'Clear API key', 'Clear')) return;
     localStorage.removeItem(LS.apiKey);
     state.apiKey = getApiKey();
     if (dom.apiKeyInput) dom.apiKeyInput.value = state.apiKey;
     refreshApiKeyStatus();
-    toast('Local Claude key cleared.', 2200, 'success');
+    toast('Local API key cleared.', 2200, 'success');
   });
 
   dom.testApiBtn?.addEventListener('click', async () => {
@@ -2688,33 +2692,33 @@ function bindEventListeners() {
         },
         {
           id: 'model-mini',
-          label: `${model === 'claude-3-5-sonnet-latest' ? '✓ ' : ''}Model: Claude 3.5 Sonnet`,
+          label: `${model === 'meta-llama/Meta-Llama-3.1-8B-Instruct' ? '✓ ' : ''}Model: Llama 3.1 8B Instruct`,
           run: () => {
-            dom.modelSelect.value = 'claude-3-5-sonnet-latest';
+            dom.modelSelect.value = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-4o',
-          label: `${model === 'claude-sonnet-4-20250514' ? '✓ ' : ''}Model: Claude Sonnet 4`,
+          label: `${model === 'Qwen/Qwen2.5-72B-Instruct' ? '✓ ' : ''}Model: Qwen 2.5 72B`,
           run: () => {
-            dom.modelSelect.value = 'claude-sonnet-4-20250514';
+            dom.modelSelect.value = 'Qwen/Qwen2.5-72B-Instruct';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-41-mini',
-          label: `${model === 'claude-3-7-sonnet-latest' ? '✓ ' : ''}Model: Claude 3.7 Sonnet`,
+          label: `${model === 'mistralai/Mixtral-8x7B-Instruct-v0.1' ? '✓ ' : ''}Model: Mixtral 8x7B`,
           run: () => {
-            dom.modelSelect.value = 'claude-3-7-sonnet-latest';
+            dom.modelSelect.value = 'mistralai/Mixtral-8x7B-Instruct-v0.1';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-41',
-          label: `${model === 'claude-3-5-haiku-latest' ? '✓ ' : ''}Model: Claude 3.5 Haiku`,
+          label: `${model === 'deepseek-ai/DeepSeek-R1' ? '✓ ' : ''}Model: DeepSeek R1`,
           run: () => {
-            dom.modelSelect.value = 'claude-3-5-haiku-latest';
+            dom.modelSelect.value = 'deepseek-ai/DeepSeek-R1';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
@@ -3186,7 +3190,7 @@ async function init() {
   }
 
   if (!state.apiKey && localStorage.getItem(LS.setupComplete) === 'true') {
-    toast('Admin API config missing. Add Claude key via config.js or deployment env.', 4200, 'warning');
+    toast('Admin API config missing. Add provider key via config.js or deployment env.', 4200, 'warning');
   }
 
   maybeShowChangelog();
