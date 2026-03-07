@@ -241,7 +241,7 @@ export const Storage = {
       title: data.title || 'New Conversation',
       createdAt: now,
       updatedAt: now,
-      model: data.model || 'gemini-2.0-flash',
+      model: data.model || 'claude-3-5-sonnet-latest',
       messageCount: 0,
       isPinned: false,
       isArchived: false,

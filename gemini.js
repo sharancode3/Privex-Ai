@@ -1,7 +1,8 @@
 const OPENAI_CHAT_COMPLETIONS = 'https://api.openai.com/v1/chat/completions';
 const XAI_CHAT_COMPLETIONS = 'https://api.x.ai/v1/chat/completions';
 const GEMINI_CHAT_COMPLETIONS = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
+const DEFAULT_MODEL = 'claude-3-5-sonnet-latest';
 
 let currentAbortController = null;
 
@@ -23,19 +24,63 @@ function toOpenAIMessages(messages, systemPrompt = '') {
   return normalized;
 }
 
-function resolveEndpoint(apiKey, config = {}) {
+function getProvider(apiKey, config = {}) {
   const model = String(config.model || '').toLowerCase();
   const provider = String(window?.PRIVEX_CONFIG?.provider || '').toLowerCase();
+  const key = String(apiKey || '');
+
+  if (provider === 'anthropic' || provider === 'claude') return 'anthropic';
+  if (provider === 'gemini') return 'gemini';
+  if (provider === 'xai') return 'xai';
+  if (model.startsWith('claude') || key.startsWith('sk-ant-')) return 'anthropic';
+  if (model.startsWith('gemini') || key.startsWith('AIza')) return 'gemini';
+  if (model.startsWith('grok') || key.startsWith('xai-')) return 'xai';
+  return 'openai';
+}
+
+function toAnthropicBody(messages, systemPrompt = '', config = {}, stream = false) {
+  const normalized = [];
+  for (const msg of messages || []) {
+    const role = msg.role === 'model' ? 'assistant' : (msg.role || 'user');
+    if (role !== 'user' && role !== 'assistant') continue;
+    const text = Array.isArray(msg.parts)
+      ? msg.parts.map((p) => p?.text || '').join('')
+      : (msg.content || '');
+    if (!text) continue;
+    normalized.push({
+      role,
+      content: [{ type: 'text', text }],
+    });
+  }
+
+  return {
+    model: config.model || DEFAULT_MODEL,
+    max_tokens: config.maxTokens ?? 4096,
+    temperature: config.temperature ?? 0.9,
+    stream,
+    system: systemPrompt?.trim() || undefined,
+    messages: normalized,
+  };
+}
+
+function resolveEndpoint(apiKey, config = {}) {
+  const provider = getProvider(apiKey, config);
+  if (provider === 'anthropic' && window?.PRIVEX_CONFIG?.anthropicBaseUrl) {
+    return `${window.PRIVEX_CONFIG.anthropicBaseUrl.replace(/\/$/, '')}/messages`;
+  }
   if (window?.PRIVEX_CONFIG?.geminiBaseUrl) {
     return `${window.PRIVEX_CONFIG.geminiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   }
   if (window?.PRIVEX_CONFIG?.xaiBaseUrl) {
     return `${window.PRIVEX_CONFIG.xaiBaseUrl.replace(/\/$/, '')}/chat/completions`;
   }
-  if (provider === 'gemini' || model.startsWith('gemini') || String(apiKey || '').startsWith('AIza')) {
+  if (provider === 'anthropic') {
+    return ANTHROPIC_MESSAGES;
+  }
+  if (provider === 'gemini') {
     return GEMINI_CHAT_COMPLETIONS;
   }
-  if (provider === 'xai' || String(apiKey || '').startsWith('xai-') || model.startsWith('grok')) {
+  if (provider === 'xai') {
     return XAI_CHAT_COMPLETIONS;
   }
   return OPENAI_CHAT_COMPLETIONS;
@@ -60,19 +105,30 @@ export function stopStreaming() {
 
 export async function testConnection(apiKey, model = DEFAULT_MODEL) {
   try {
+    const provider = getProvider(apiKey, { model });
     const endpoint = resolveEndpoint(apiKey, { model });
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
+    const body = provider === 'anthropic'
+      ? toAnthropicBody([{ role: 'user', content: 'Reply with: ok' }], '', { model, maxTokens: 16, temperature: 0 }, false)
+      : {
         model: model || DEFAULT_MODEL,
         messages: [{ role: 'user', content: 'Reply with: ok' }],
         max_tokens: 8,
         temperature: 0,
-      })
+      };
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (provider === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
@@ -87,21 +143,31 @@ export async function testConnection(apiKey, model = DEFAULT_MODEL) {
 }
 
 export async function nonStreamingGenerate(apiKey, messages, systemPrompt, config = {}) {
-  const body = {
-    model: config.model || DEFAULT_MODEL,
-    messages: toOpenAIMessages(messages, systemPrompt),
-    temperature: config.temperature ?? 0.9,
-    max_tokens: config.maxTokens ?? 1024,
-    stream: false,
-  };
+  const provider = getProvider(apiKey, config);
+  const body = provider === 'anthropic'
+    ? toAnthropicBody(messages, systemPrompt, { ...config, maxTokens: config.maxTokens ?? 4096 }, false)
+    : {
+      model: config.model || DEFAULT_MODEL,
+      messages: toOpenAIMessages(messages, systemPrompt),
+      temperature: config.temperature ?? 0.9,
+      max_tokens: config.maxTokens ?? 1024,
+      stream: false,
+    };
 
   const endpoint = resolveEndpoint(apiKey, config);
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (provider === 'anthropic') {
+    headers['x-api-key'] = apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+  } else {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify(body)
   });
 
@@ -111,6 +177,9 @@ export async function nonStreamingGenerate(apiKey, messages, systemPrompt, confi
   }
 
   const json = await response.json();
+  if (provider === 'anthropic') {
+    return (json?.content || []).filter((part) => part?.type === 'text').map((part) => part?.text || '').join('');
+  }
   return json?.choices?.[0]?.message?.content || '';
 }
 
@@ -118,22 +187,32 @@ export async function streamMessage(apiKey, messages, systemPrompt, config, onCh
   stopStreaming();
   currentAbortController = new AbortController();
 
-  const body = {
-    model: config.model || DEFAULT_MODEL,
-    messages: toOpenAIMessages(messages, systemPrompt),
-    temperature: config.temperature ?? 0.9,
-    max_tokens: config.maxTokens ?? 8192,
-    stream: true,
-  };
+  const provider = getProvider(apiKey, config);
+  const body = provider === 'anthropic'
+    ? toAnthropicBody(messages, systemPrompt, config, true)
+    : {
+      model: config.model || DEFAULT_MODEL,
+      messages: toOpenAIMessages(messages, systemPrompt),
+      temperature: config.temperature ?? 0.9,
+      max_tokens: config.maxTokens ?? 8192,
+      stream: true,
+    };
 
   try {
     const endpoint = resolveEndpoint(apiKey, config);
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (provider === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers,
       body: JSON.stringify(body),
       signal: currentAbortController.signal
     });
@@ -164,7 +243,14 @@ export async function streamMessage(apiKey, messages, systemPrompt, config, onCh
 
         try {
           const parsed = JSON.parse(jsonStr);
-          const text = parsed?.choices?.[0]?.delta?.content || '';
+          let text = '';
+          if (provider === 'anthropic') {
+            if (parsed?.type === 'content_block_delta' && parsed?.delta?.type === 'text_delta') {
+              text = parsed?.delta?.text || '';
+            }
+          } else {
+            text = parsed?.choices?.[0]?.delta?.content || '';
+          }
           if (text) {
             fullText += text;
             onChunk(text, fullText);

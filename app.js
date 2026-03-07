@@ -47,7 +47,7 @@ const DEFAULTS = {
   streaming: true,
   memoryEnabled: true,
   showTimestamps: false,
-  model: 'gemini-2.0-flash',
+  model: 'claude-3-5-sonnet-latest',
   temperature: 0.9,
   maxTokens: 8192,
   incognito: false,
@@ -193,7 +193,7 @@ function xorDeobfuscate(value) {
 }
 
 function getApiKey() {
-  const configured = window.PRIVEX_CONFIG?.geminiApiKey || window.PRIVEX_CONFIG?.xaiApiKey || window.PRIVEX_CONFIG?.openaiApiKey;
+  const configured = window.PRIVEX_CONFIG?.claudeApiKey || window.PRIVEX_CONFIG?.anthropicApiKey || window.PRIVEX_CONFIG?.geminiApiKey || window.PRIVEX_CONFIG?.xaiApiKey || window.PRIVEX_CONFIG?.openaiApiKey;
   if (configured && typeof configured === 'string' && configured.trim()) {
     return configured.trim();
   }
@@ -211,6 +211,12 @@ function estimateTokens(text) {
 
 function prettyModelName(model) {
   const val = String(model || '').toLowerCase();
+  if (val.includes('claude-opus-4-1')) return 'Claude Opus 4.1';
+  if (val.includes('claude-opus-4')) return 'Claude Opus 4';
+  if (val.includes('claude-sonnet-4')) return 'Claude Sonnet 4';
+  if (val.includes('claude-3-7-sonnet')) return 'Claude 3.7 Sonnet';
+  if (val.includes('claude-3-5-sonnet')) return 'Claude 3.5 Sonnet';
+  if (val.includes('claude-3-5-haiku')) return 'Claude 3.5 Haiku';
   if (val.includes('gemini-2.5-pro')) return 'Gemini 2.5 Pro';
   if (val.includes('gemini-2.0-flash')) return 'Gemini 2.0 Flash';
   if (val.includes('gemini-1.5-pro')) return 'Gemini 1.5 Pro';
@@ -1754,7 +1760,7 @@ async function sendMessage() {
   if (!text) return;
 
   if (!state.apiKey) {
-    toast('API config missing. Add `window.PRIVEX_CONFIG.geminiApiKey` in config.js.', 4200, 'warning');
+    toast('API config missing. Add `window.PRIVEX_CONFIG.claudeApiKey` in config.js.', 4200, 'warning');
     return;
   }
 
@@ -2149,7 +2155,7 @@ async function updateStorageStats() {
     `Pending queued messages: ${pendingCount}    Est. storage: ${stats.estimatedMB} MB`,
     `Last local activity: ${lastActivity}`,
     'Data stored locally: conversations, messages, memories.',
-    'Data sent to Gemini API: conversation content for model processing only.',
+    'Data sent to Claude API: conversation content for model processing only.',
     'Data sent to us: none (no analytics, no tracking, no servers).',
   ].map((line) => `<div>${line}</div>`).join('');
 }
@@ -2578,33 +2584,33 @@ function bindEventListeners() {
         },
         {
           id: 'model-mini',
-          label: `${model === 'gemini-2.0-flash' ? '✓ ' : ''}Model: Gemini 2.0 Flash`,
+          label: `${model === 'claude-3-5-sonnet-latest' ? '✓ ' : ''}Model: Claude 3.5 Sonnet`,
           run: () => {
-            dom.modelSelect.value = 'gemini-2.0-flash';
+            dom.modelSelect.value = 'claude-3-5-sonnet-latest';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-4o',
-          label: `${model === 'gemini-2.5-pro' ? '✓ ' : ''}Model: Gemini 2.5 Pro`,
+          label: `${model === 'claude-sonnet-4-20250514' ? '✓ ' : ''}Model: Claude Sonnet 4`,
           run: () => {
-            dom.modelSelect.value = 'gemini-2.5-pro';
+            dom.modelSelect.value = 'claude-sonnet-4-20250514';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-41-mini',
-          label: `${model === 'gemini-1.5-pro' ? '✓ ' : ''}Model: Gemini 1.5 Pro`,
+          label: `${model === 'claude-3-7-sonnet-latest' ? '✓ ' : ''}Model: Claude 3.7 Sonnet`,
           run: () => {
-            dom.modelSelect.value = 'gemini-1.5-pro';
+            dom.modelSelect.value = 'claude-3-7-sonnet-latest';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
         {
           id: 'model-41',
-          label: `${model === 'gemini-1.5-flash' ? '✓ ' : ''}Model: Gemini 1.5 Flash`,
+          label: `${model === 'claude-3-5-haiku-latest' ? '✓ ' : ''}Model: Claude 3.5 Haiku`,
           run: () => {
-            dom.modelSelect.value = 'gemini-1.5-flash';
+            dom.modelSelect.value = 'claude-3-5-haiku-latest';
             dom.modelSelect.dispatchEvent(new Event('change'));
           },
         },
@@ -3074,7 +3080,7 @@ async function init() {
   }
 
   if (!state.apiKey && localStorage.getItem(LS.setupComplete) === 'true') {
-    toast('Admin API config missing. Add Gemini key via config.js or deployment env.', 4200, 'warning');
+    toast('Admin API config missing. Add Claude key via config.js or deployment env.', 4200, 'warning');
   }
 
   maybeShowChangelog();
