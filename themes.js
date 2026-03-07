@@ -1,0 +1,64 @@
+const ACCENT_PRESETS = ['#6366f1', '#a855f7', '#06b6d4', '#22c55e', '#f97316', '#ec4899', '#ef4444', '#f59e0b'];
+
+export function hexToRgba(hex, alpha = 1) {
+  const cleaned = (hex || '').replace('#', '');
+  const normalized = cleaned.length === 3
+    ? cleaned.split('').map((v) => v + v).join('')
+    : cleaned;
+  const int = parseInt(normalized, 16);
+  const red = (int >> 16) & 255;
+  const green = (int >> 8) & 255;
+  const blue = int & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+export function darken(hex, percent = 10) {
+  const cleaned = (hex || '#6366f1').replace('#', '');
+  const normalized = cleaned.length === 3
+    ? cleaned.split('').map((v) => v + v).join('')
+    : cleaned;
+
+  const int = parseInt(normalized, 16);
+  let red = (int >> 16) & 255;
+  let green = (int >> 8) & 255;
+  let blue = int & 255;
+
+  const ratio = (100 - percent) / 100;
+  red = Math.max(0, Math.floor(red * ratio));
+  green = Math.max(0, Math.floor(green * ratio));
+  blue = Math.max(0, Math.floor(blue * ratio));
+
+  const toHex = (value) => value.toString(16).padStart(2, '0');
+  return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
+}
+
+export function applyAccentColor(hex) {
+  const root = document.documentElement;
+  root.style.setProperty('--accent', hex);
+  root.style.setProperty('--accent-hover', darken(hex, 10));
+  root.style.setProperty('--accent-glow', hexToRgba(hex, 0.15));
+}
+
+export function resolveTheme(theme) {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return theme || 'dark';
+}
+
+export function applyTheme(theme) {
+  const resolved = resolveTheme(theme);
+  document.documentElement.dataset.theme = resolved;
+}
+
+export function applyFontSize(font) {
+  document.documentElement.dataset.font = font || 'md';
+}
+
+export function applyWidth(width) {
+  document.documentElement.dataset.width = width || 'normal';
+}
+
+export function getAccentPresets() {
+  return ACCENT_PRESETS.slice();
+}

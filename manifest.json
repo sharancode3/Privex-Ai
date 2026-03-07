@@ -1,0 +1,17 @@
+{
+  "name": "Privex AI",
+  "short_name": "Privex",
+  "description": "Private AI assistant powered by Gemini",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f0f13",
+  "theme_color": "#0f0f13",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
