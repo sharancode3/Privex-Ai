@@ -205,6 +205,28 @@ function setApiKey(raw) {
   state.apiKey = raw;
 }
 
+async function ensureApiKeyConfigured() {
+  state.apiKey = getApiKey();
+  if (state.apiKey) return true;
+
+  const entered = await uiPrompt(
+    'Paste your Claude API key. It is saved only in this browser local storage.',
+    '',
+    'Set Claude API Key',
+    'Save Key'
+  );
+
+  if (!entered) {
+    toast('Claude API key is required to send messages.', 3200, 'warning');
+    return false;
+  }
+
+  setApiKey(entered);
+  if (dom.apiKeyInput) dom.apiKeyInput.value = entered;
+  toast('Claude API key saved locally.', 2200, 'success');
+  return true;
+}
+
 function estimateTokens(text) {
   return Math.ceil((text || '').length / 4);
 }
@@ -429,7 +451,7 @@ function ensureUiDialogHost() {
     <div class="ui-dialog-card" role="dialog" aria-modal="true" aria-labelledby="uiDialogTitle">
       <h3 id="uiDialogTitle"></h3>
       <p id="uiDialogMessage"></p>
-      <input id="uiDialogInput" class="hidden" type="text" maxlength="120" />
+      <input id="uiDialogInput" class="hidden" type="text" maxlength="512" />
       <div class="ui-dialog-actions">
         <button id="uiDialogCancel" class="btn btn-outline" type="button">Cancel</button>
         <button id="uiDialogOk" class="btn" type="button">OK</button>
@@ -1759,8 +1781,8 @@ async function sendMessage() {
   const text = dom.chatInput.value.trim();
   if (!text) return;
 
-  if (!state.apiKey) {
-    toast('API config missing. Add `window.PRIVEX_CONFIG.claudeApiKey` in config.js.', 4200, 'warning');
+  if (!await ensureApiKeyConfigured()) {
+    toast('API config missing. Add Claude key in-app or via config.js.', 4200, 'warning');
     return;
   }
 
