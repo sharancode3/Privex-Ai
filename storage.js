@@ -241,7 +241,7 @@ export const Storage = {
       title: data.title || 'New Conversation',
       createdAt: now,
       updatedAt: now,
-      model: data.model || 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+      model: data.model || 'Qwen/Qwen2.5-72B-Instruct',
       messageCount: 0,
       isPinned: false,
       isArchived: false,

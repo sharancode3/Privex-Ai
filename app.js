@@ -47,7 +47,7 @@ const DEFAULTS = {
   streaming: true,
   memoryEnabled: true,
   showTimestamps: false,
-  model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+  model: 'Qwen/Qwen2.5-72B-Instruct',
   temperature: 0.9,
   maxTokens: 8192,
   incognito: false,

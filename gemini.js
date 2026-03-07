@@ -3,7 +3,7 @@ const XAI_CHAT_COMPLETIONS = 'https://api.x.ai/v1/chat/completions';
 const GEMINI_CHAT_COMPLETIONS = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
 const HUGGINGFACE_CHAT_COMPLETIONS = 'https://router.huggingface.co/v1/chat/completions';
-const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
+const DEFAULT_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
 
 let currentAbortController = null;
 
