@@ -5,7 +5,6 @@ import { applyTheme, applyFontSize, applyWidth } from './themes.js';
 
 const LS = {
   apiKey: 'privexai_openai_key',
-  provider: 'privexai_provider',
   model: 'privexai_model',
   activeConversationId: 'privexai_active_conv_id',
   apiValidated: 'privexai_api_validated',
@@ -16,16 +15,23 @@ const LS = {
   showTimestamps: 'privexai_show_timestamps'
 };
 
-const MODELS = {
-  openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1'],
-  gemini: ['gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'],
-  anthropic: ['claude-3-5-haiku', 'claude-3-5-sonnet', 'claude-sonnet-4'],
-  xai: ['grok-2-latest', 'grok-2', 'grok-beta'],
-  huggingface: ['Qwen/Qwen2.5-72B-Instruct', 'meta-llama/Meta-Llama-3.1-8B-Instruct']
-};
+const MODELS = [
+  'gpt-4o-mini',
+  'gpt-4o',
+  'gpt-4.1-mini',
+  'gpt-4.1',
+  'gemini-2.0-flash',
+  'gemini-2.5-pro',
+  'claude-3-5-haiku',
+  'claude-3-5-sonnet',
+  'claude-sonnet-4',
+  'grok-2-latest',
+  'grok-beta',
+  'Qwen/Qwen2.5-72B-Instruct',
+  'meta-llama/Meta-Llama-3.1-8B-Instruct'
+];
 
 const DEFAULTS = {
-  provider: 'openai',
   model: 'gpt-4o-mini',
   theme: 'dark',
   font: 'md',
@@ -118,25 +124,14 @@ function autoResizeTextarea() {
   dom.messageInput.style.height = `${Math.min(dom.messageInput.scrollHeight, 180)}px`;
 }
 
-function buildModelSelect(selectEl, provider, preferredModel) {
-  const models = MODELS[provider] || MODELS.openai;
-  selectEl.innerHTML = models.map((model) => `<option value="${model}">${model}</option>`).join('');
-  selectEl.value = models.includes(preferredModel) ? preferredModel : models[0];
+function buildModelSelect(selectEl, preferredModel) {
+  selectEl.innerHTML = MODELS.map((model) => `<option value="${model}">${model}</option>`).join('');
+  selectEl.value = MODELS.includes(preferredModel) ? preferredModel : DEFAULTS.model;
 }
 
-function buildProviderSelects() {
-  const options = Object.keys(MODELS)
-    .map((provider) => `<option value="${provider}">${provider}</option>`)
-    .join('');
-
-  dom.panelProviderSelect.innerHTML = options;
-}
-
-function syncProviderModelInputs(provider, model) {
-  buildModelSelect(dom.modelSelect, provider, model);
-  buildModelSelect(dom.panelModelSelect, provider, model);
-  dom.providerSelect.value = provider;
-  dom.panelProviderSelect.value = provider;
+function syncModelInputs(model) {
+  buildModelSelect(dom.modelSelect, model);
+  buildModelSelect(dom.panelModelSelect, model);
   dom.panelModelSelect.value = dom.modelSelect.value;
 }
 
@@ -161,7 +156,7 @@ function markdownWithCodeCopy(text) {
 function renderMessages() {
   const showTimes = boolSetting(LS.showTimestamps, false);
   if (!state.messages.length) {
-    dom.messages.innerHTML = '<div class="message-stack"><div class="empty-state"><h3>Private by default</h3><p>Test your key, then start chatting.</p></div></div>';
+    dom.messages.innerHTML = '<div class="message-stack"><div class="empty-state"><h3>Privex AI Workspace</h3><p>Universal BYOK testing with local-only memory and zero server chat storage.</p><div class="empty-pill-row"><span class="empty-pill">Universal API key</span><span class="empty-pill">Streaming enabled</span><span class="empty-pill">Private local history</span></div></div></div>';
     return;
   }
 
@@ -300,7 +295,6 @@ async function sendMessage(text) {
   state.isStreaming = true;
   setLockedState();
 
-  const provider = getSetting(LS.provider, DEFAULTS.provider);
   const model = getSetting(LS.model, DEFAULTS.model);
 
   const userMessage = await Storage.addMessage(state.activeConversationId, {
@@ -341,7 +335,6 @@ async function sendMessage(text) {
   };
 
   const config = {
-    provider,
     model,
     temperature: 0.6,
     maxTokens: 2048
@@ -384,7 +377,6 @@ async function regenerateFromMessage(aiMessageId) {
   if (userIndex < 0) return;
 
   const apiKey = getApiKey();
-  const provider = getSetting(LS.provider, DEFAULTS.provider);
   const model = getSetting(LS.model, DEFAULTS.model);
 
   state.isStreaming = true;
@@ -398,7 +390,6 @@ async function regenerateFromMessage(aiMessageId) {
     context,
     activeSystemPrompt(),
     {
-      provider,
       model,
       temperature: 0.6,
       maxTokens: 2048
@@ -434,10 +425,8 @@ async function runConnectionTest() {
     return;
   }
 
-  const provider = dom.providerSelect.value;
   const model = dom.modelSelect.value;
 
-  localStorage.setItem(LS.provider, provider);
   localStorage.setItem(LS.model, model);
   setApiKey(key);
 
@@ -543,7 +532,7 @@ function typeDemoBubble(role, text, delay = 0) {
 async function runOnboardingDemo() {
   dom.demoStage.innerHTML = '';
   await typeDemoBubble('ai', 'Enter your API key');
-  await typeDemoBubble('user', 'Test connection', 420);
+  await typeDemoBubble('user', 'Run key test', 420);
   await typeDemoBubble('ai', 'Start chatting privately', 420);
   const glow = document.createElement('div');
   glow.className = 'demo-bubble ai';
@@ -627,21 +616,9 @@ function bindUIEvents() {
   dom.apiPanelBtn.addEventListener('click', () => dom.apiModal.classList.remove('hidden'));
   dom.openApiPanelSetup.addEventListener('click', () => dom.apiModal.classList.remove('hidden'));
 
-  dom.providerSelect.addEventListener('change', () => {
-    syncProviderModelInputs(dom.providerSelect.value, dom.modelSelect.value);
-    localStorage.setItem(LS.provider, dom.providerSelect.value);
-    localStorage.setItem(LS.model, dom.modelSelect.value);
-  });
-
   dom.modelSelect.addEventListener('change', () => {
     dom.panelModelSelect.value = dom.modelSelect.value;
     localStorage.setItem(LS.model, dom.modelSelect.value);
-  });
-
-  dom.panelProviderSelect.addEventListener('change', () => {
-    syncProviderModelInputs(dom.panelProviderSelect.value, dom.panelModelSelect.value);
-    localStorage.setItem(LS.provider, dom.panelProviderSelect.value);
-    localStorage.setItem(LS.model, dom.panelModelSelect.value);
   });
 
   dom.panelModelSelect.addEventListener('change', () => {
@@ -690,11 +667,11 @@ function bindUIEvents() {
 function cacheDom() {
   [
     'onboardingOverlay', 'demoStage', 'startDemoBtn', 'skipDemoBtn',
-    'apiModal', 'providerSelect', 'modelSelect', 'apiKeyInput', 'testConnectionBtn', 'apiStatus',
+    'apiModal', 'modelSelect', 'apiKeyInput', 'testConnectionBtn', 'apiStatus',
     'sidebar', 'newChatBtn', 'chatList', 'sidebarSettingsBtn', 'exportBtn',
     'activeTitle', 'menuBtn', 'installBtn', 'apiPanelBtn', 'settingsBtn',
     'messages', 'messageInput', 'sendBtn', 'chatLockState', 'openApiFromComposer',
-    'rightPanel', 'panelProviderSelect', 'panelModelSelect', 'openApiPanelSetup',
+    'rightPanel', 'panelModelSelect', 'openApiPanelSetup',
     'settingsModal', 'themeSelect', 'fontSelect', 'widthSelect', 'timestampsToggle',
     'clearApiKeyBtn', 'clearDataBtn', 'settingsExportBtn', 'closeSettingsBtn',
     'offlineBanner'
@@ -706,11 +683,8 @@ function cacheDom() {
 async function init() {
   cacheDom();
   applySavedAppearance();
-  buildProviderSelects();
-
-  const provider = getSetting(LS.provider, DEFAULTS.provider);
   const model = getSetting(LS.model, DEFAULTS.model);
-  syncProviderModelInputs(provider, model);
+  syncModelInputs(model);
 
   const key = getApiKey();
   if (key) dom.apiKeyInput.value = key;

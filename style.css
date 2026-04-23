@@ -120,6 +120,37 @@ body {
   font-size: 0.78rem;
 }
 
+.sidebar-stat {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(160deg, rgba(112, 104, 255, 0.2), rgba(112, 104, 255, 0.03));
+}
+
+.sidebar-stat strong {
+  display: block;
+  font-size: 0.83rem;
+}
+
+.sidebar-stat p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.stat-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: #36e2a3;
+  box-shadow: 0 0 0 5px rgba(54, 226, 163, 0.16);
+}
+
 .chat-list {
   padding: 0 10px;
   overflow: auto;
@@ -177,6 +208,7 @@ body {
   gap: 12px;
   padding: 14px 16px;
   border-bottom: 1px solid var(--panel-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
 }
 
 .topbar-left,
@@ -204,10 +236,41 @@ body {
 
 .empty-state {
   text-align: center;
-  border: 1px dashed var(--panel-border);
+  border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
-  padding: 38px 20px;
+  padding: 44px 24px;
   color: var(--muted);
+  background:
+    radial-gradient(80% 80% at 50% -20%, rgba(112, 104, 255, 0.26), transparent),
+    rgba(255, 255, 255, 0.02);
+}
+
+.empty-state h3 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.empty-state p {
+  margin: 10px auto 0;
+  max-width: 620px;
+}
+
+.empty-pill-row {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.empty-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d6dcff;
+  background: rgba(112, 104, 255, 0.18);
+  font-size: 0.76rem;
 }
 
 .msg {
@@ -285,7 +348,7 @@ body {
 .btn-primary {
   color: #fff;
   background: linear-gradient(140deg, var(--accent), var(--accent-2));
-  box-shadow: 0 10px 24px rgba(112, 104, 255, 0.34);
+  box-shadow: 0 12px 30px rgba(112, 104, 255, 0.42);
 }
 
 .btn-primary:hover {
@@ -390,6 +453,26 @@ body {
   gap: 8px;
 }
 
+.runtime-note {
+  margin: 6px 0 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.runtime-note strong {
+  display: block;
+  font-size: 0.82rem;
+}
+
+.runtime-note p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 .panel-body label,
 .modal-card label {
   color: var(--muted);
@@ -424,7 +507,9 @@ input {
 .modal-card {
   width: min(100%, 520px);
   border-radius: 22px;
-  background: var(--panel-strong);
+  background:
+    radial-gradient(90% 90% at 80% -10%, rgba(142, 102, 255, 0.25), transparent),
+    var(--panel-strong);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
   padding: 22px;
