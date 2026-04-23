@@ -1,33 +1,68 @@
-const CACHE_NAME = 'privex-ai-v1';
-const SHELL_FILES = [
+const CACHE_NAME = 'privex-ai-v2';
+
+const APP_SHELL = [
   './',
   './index.html',
+  './offline.html',
   './style.css',
   './app.js',
-  './gemini.js',
   './storage.js',
+  './gemini.js',
   './markdown.js',
   './themes.js',
   './crypto.js',
+  './manifest.json',
   './assets/logo.svg',
   './assets/favicon.ico'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(SHELL_FILES)));
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    ))
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.url.includes('generativelanguage.googleapis.com') || e.request.url.includes('api.openai.com')) return;
-  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+          return response;
+        })
+        .catch(() => caches.match('./offline.html'))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response && response.status === 200 && request.method === 'GET') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      });
+    })
+  );
 });
