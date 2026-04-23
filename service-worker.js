@@ -1,4 +1,4 @@
-const CACHE_NAME = 'privex-ai-v2';
+const CACHE_NAME = 'privex-ai-v3';
 
 const APP_SHELL = [
   './',
@@ -12,8 +12,9 @@ const APP_SHELL = [
   './themes.js',
   './crypto.js',
   './manifest.json',
-  './assets/logo.svg',
-  './assets/favicon.ico'
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/logo.svg'
 ];
 
 self.addEventListener('install', (event) => {
