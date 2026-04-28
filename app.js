@@ -295,7 +295,7 @@ async function sendMessage(text) {
   
   // Check if API key is present BEFORE allowing send
   if (!ApiConfig.isApiKeyPresent()) {
-    dom.apiModal.classList.remove('hidden');
+    showStatus('⚠️ API key not set. Click "API" button in top right to configure.', 'error');
     return;
   }
 
@@ -638,9 +638,21 @@ function bindUIEvents() {
   });
 
   dom.testConnectionBtn.addEventListener('click', runConnectionTest);
-  dom.openApiFromComposer.addEventListener('click', () => dom.apiModal.classList.remove('hidden'));
-  dom.apiPanelBtn.addEventListener('click', () => dom.apiModal.classList.remove('hidden'));
-  dom.openApiPanelSetup.addEventListener('click', () => dom.apiModal.classList.remove('hidden'));
+  dom.openApiFromComposer.addEventListener('click', () => {
+    const model = getSetting(LS.model, DEFAULTS.model);
+    syncModelInputs(model);
+    dom.apiModal.classList.remove('hidden');
+  });
+  dom.apiPanelBtn.addEventListener('click', () => {
+    const model = getSetting(LS.model, DEFAULTS.model);
+    syncModelInputs(model);
+    dom.apiModal.classList.remove('hidden');
+  });
+  dom.openApiPanelSetup.addEventListener('click', () => {
+    const model = getSetting(LS.model, DEFAULTS.model);
+    syncModelInputs(model);
+    dom.apiModal.classList.remove('hidden');
+  });
 
   dom.modelSelect.addEventListener('change', () => {
     dom.panelModelSelect.value = dom.modelSelect.value;
@@ -708,11 +720,12 @@ function cacheDom() {
 async function init() {
   cacheDom();
   applySavedAppearance();
-  const model = getSetting(LS.model, DEFAULTS.model);
-  syncModelInputs(model);
 
   const key = getApiKey();
-  if (key) dom.apiKeyInput.value = key;
+  const model = getSetting(LS.model, DEFAULTS.model);
+  
+  // Only sync model inputs if user opens settings/API panel
+  // Don't show anything on startup
 
   bindAppearanceEvents();
   bindUIEvents();
@@ -723,22 +736,12 @@ async function init() {
   await Storage.init();
   await ensureConversation();
 
-  // REMOVED: Forced onboarding overlay
-  // REMOVED: Forced API modal on startup
-  // Users can access API setup via Settings or API panel button
+  // Hide everything on startup - user opens settings if needed
   dom.onboardingOverlay.classList.add('hidden');
-  
-  // Auto-show API modal only if NO API key is present AND user has not set one yet
-  // (on first time setup, offer to set API key)
-  const hasSeenSetup = localStorage.getItem('privexai_setup_seen');
-  if (!key && !hasSeenSetup) {
-    localStorage.setItem('privexai_setup_seen', 'true');
-    setTimeout(() => {
-      dom.apiModal.classList.remove('hidden');
-    }, 800);
-  } else {
-    dom.apiModal.classList.add('hidden');
-  }
+  dom.apiModal.classList.add('hidden');
+
+  // Populate API key in modal only when needed (if user opens settings)
+  if (key) dom.apiKeyInput.value = key;
 
   setLockedState();
 }
