@@ -295,7 +295,7 @@ async function sendMessage(text) {
   
   // Check if API key is present BEFORE allowing send
   if (!ApiConfig.isApiKeyPresent()) {
-    showStatus('⚠️ API key not set. Click "API" button in top right to configure.', 'error');
+    showStatus('⚠️ API key not configured. Open Settings to add your API key.', 'error');
     return;
   }
 
@@ -388,7 +388,7 @@ async function regenerateFromMessage(aiMessageId) {
   if (userIndex < 0) return;
 
   if (!ApiConfig.isApiKeyPresent()) {
-    showStatus('API key required to regenerate', 'error');
+    showStatus('⚠️ API key not configured. Open Settings to add your API key.', 'error');
     return;
   }
 
@@ -638,34 +638,23 @@ function bindUIEvents() {
   });
 
   dom.testConnectionBtn.addEventListener('click', runConnectionTest);
-  dom.openApiFromComposer.addEventListener('click', () => {
-    const model = getSetting(LS.model, DEFAULTS.model);
-    syncModelInputs(model);
-    dom.apiModal.classList.remove('hidden');
-  });
-  dom.apiPanelBtn.addEventListener('click', () => {
-    const model = getSetting(LS.model, DEFAULTS.model);
-    syncModelInputs(model);
-    dom.apiModal.classList.remove('hidden');
-  });
-  dom.openApiPanelSetup.addEventListener('click', () => {
-    const model = getSetting(LS.model, DEFAULTS.model);
-    syncModelInputs(model);
-    dom.apiModal.classList.remove('hidden');
-  });
 
   dom.modelSelect.addEventListener('change', () => {
-    dom.panelModelSelect.value = dom.modelSelect.value;
     localStorage.setItem(LS.model, dom.modelSelect.value);
   });
 
-  dom.panelModelSelect.addEventListener('change', () => {
-    dom.modelSelect.value = dom.panelModelSelect.value;
-    localStorage.setItem(LS.model, dom.panelModelSelect.value);
+  dom.settingsBtn.addEventListener('click', () => {
+    const model = getSetting(LS.model, DEFAULTS.model);
+    syncModelInputs(model);
+    dom.settingsModal.classList.remove('hidden');
   });
-
-  dom.settingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
-  dom.sidebarSettingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('hidden'));
+  
+  dom.sidebarSettingsBtn.addEventListener('click', () => {
+    const model = getSetting(LS.model, DEFAULTS.model);
+    syncModelInputs(model);
+    dom.settingsModal.classList.remove('hidden');
+  });
+  
   dom.closeSettingsBtn.addEventListener('click', () => dom.settingsModal.classList.add('hidden'));
 
   dom.settingsExportBtn.addEventListener('click', exportData);
@@ -691,7 +680,6 @@ function bindUIEvents() {
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      dom.apiModal.classList.add('hidden');
       dom.settingsModal.classList.add('hidden');
       if (window.innerWidth <= 860) {
         dom.sidebar.classList.remove('open');
@@ -704,14 +692,13 @@ function bindUIEvents() {
 function cacheDom() {
   [
     'onboardingOverlay', 'demoStage', 'startDemoBtn', 'skipDemoBtn',
-    'apiModal', 'modelSelect', 'apiKeyInput', 'testConnectionBtn', 'apiStatus',
     'sidebar', 'newChatBtn', 'chatList', 'sidebarSettingsBtn', 'exportBtn',
-    'activeTitle', 'menuBtn', 'installBtn', 'apiPanelBtn', 'settingsBtn',
-    'messages', 'messageInput', 'sendBtn', 'chatLockState', 'openApiFromComposer',
-    'rightPanel', 'panelModelSelect', 'openApiPanelSetup',
+    'activeTitle', 'menuBtn', 'installBtn', 'settingsBtn',
+    'messages', 'messageInput', 'sendBtn', 'chatLockState',
+    'rightPanel',
     'settingsModal', 'themeSelect', 'fontSelect', 'widthSelect', 'timestampsToggle',
     'clearApiKeyBtn', 'clearDataBtn', 'settingsExportBtn', 'closeSettingsBtn',
-    'offlineBanner'
+    'offlineBanner', 'modelSelect', 'apiKeyInput', 'testConnectionBtn', 'apiStatus'
   ].forEach((id) => {
     dom[id] = $(id);
   });
@@ -723,9 +710,6 @@ async function init() {
 
   const key = getApiKey();
   const model = getSetting(LS.model, DEFAULTS.model);
-  
-  // Only sync model inputs if user opens settings/API panel
-  // Don't show anything on startup
 
   bindAppearanceEvents();
   bindUIEvents();
@@ -736,11 +720,10 @@ async function init() {
   await Storage.init();
   await ensureConversation();
 
-  // Hide everything on startup - user opens settings if needed
+  // Everything stays hidden - just pure chat interface
   dom.onboardingOverlay.classList.add('hidden');
-  dom.apiModal.classList.add('hidden');
-
-  // Populate API key in modal only when needed (if user opens settings)
+  
+  // Populate API key field if exists (for settings modal)
   if (key) dom.apiKeyInput.value = key;
 
   setLockedState();

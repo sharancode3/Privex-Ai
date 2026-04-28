@@ -17,7 +17,7 @@
 <body>
   <div class="app-bg"></div>
 
-  <div id="onboardingOverlay" class="overlay" aria-label="Welcome walkthrough" role="dialog" aria-modal="true">
+  <div id="onboardingOverlay" class="overlay hidden" aria-label="Welcome walkthrough" role="dialog" aria-modal="true">
     <div class="onboarding-card">
       <div class="onboarding-head">
         <img src="assets/logo.svg" alt="Privex AI logo" class="brand-mark">
@@ -31,19 +31,6 @@
         <button id="startDemoBtn" class="btn btn-primary">Start Demo</button>
         <button id="skipDemoBtn" class="btn btn-ghost">Skip</button>
       </div>
-    </div>
-  </div>
-
-  <div id="apiModal" class="overlay hidden" role="dialog" aria-modal="true" aria-label="API key setup">
-    <div class="modal-card">
-      <h2>Universal API key setup</h2>
-      <p>Paste any compatible key. Provider detection is automatic. Your key is stored only on this device.</p>
-      <label for="modelSelect">Model</label>
-      <select id="modelSelect"></select>
-      <label for="apiKeyInput">API key</label>
-      <input id="apiKeyInput" type="password" placeholder="Paste your key" autocomplete="off">
-      <button id="testConnectionBtn" class="btn btn-primary">Test Connection</button>
-      <p id="apiStatus" class="status-text">Idle</p>
     </div>
   </div>
 
@@ -81,7 +68,6 @@
         </div>
         <div class="topbar-right">
           <button id="installBtn" class="btn btn-ghost hidden">Install</button>
-          <button id="apiPanelBtn" class="btn btn-ghost">API</button>
           <button id="settingsBtn" class="btn btn-ghost">Settings</button>
         </div>
       </header>
@@ -100,7 +86,7 @@
       </footer>
     </main>
 
-    <aside id="rightPanel" class="right-panel">
+    <aside id="rightPanel" class="right-panel hidden">
       <div class="panel-head">
         <h3>Runtime Controls</h3>
       </div>
@@ -119,6 +105,8 @@
   <div id="settingsModal" class="overlay hidden" role="dialog" aria-modal="true" aria-label="App settings">
     <div class="modal-card">
       <h2>Settings</h2>
+      
+      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">Display</h3>
       <label for="themeSelect">Theme</label>
       <select id="themeSelect">
         <option value="dark">Dark</option>
@@ -138,12 +126,22 @@
         <option value="wide">Wide</option>
       </select>
       <label class="toggle-row"><input id="timestampsToggle" type="checkbox"> Show timestamps</label>
+      
+      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">API Configuration</h3>
+      <label for="modelSelect">AI Model</label>
+      <select id="modelSelect"></select>
+      <label for="apiKeyInput">API Key</label>
+      <input id="apiKeyInput" type="password" placeholder="Paste your API key here" autocomplete="off">
+      <button id="testConnectionBtn" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Test Connection</button>
+      <p id="apiStatus" class="status-text" style="margin-top: 8px;">Idle</p>
+      
+      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">Data</h3>
       <div class="settings-actions">
         <button id="clearApiKeyBtn" class="btn btn-ghost">Clear API Key</button>
         <button id="clearDataBtn" class="btn btn-ghost">Clear Local Data</button>
         <button id="settingsExportBtn" class="btn btn-primary">Export Data</button>
       </div>
-      <button id="closeSettingsBtn" class="btn btn-ghost">Close</button>
+      <button id="closeSettingsBtn" class="btn btn-ghost" style="margin-top: 12px;">Close</button>
     </div>
   </div>
 
