@@ -9,8 +9,8 @@
  */
 
 import { Storage } from '../storage.js';
-import { ApiClient } from './apiClient.js';
-import { ApiConfig } from './apiConfig.js';
+import { ApiClient } from '../services/apiClient.js';
+import { ApiConfig } from '../services/apiConfig.js';
 
 /**
  * Generate system prompt based on persona
