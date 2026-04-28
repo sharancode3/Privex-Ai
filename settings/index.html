@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-font="md" data-width="normal">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Privex AI settings">
+  <meta name="theme-color" content="#0b0b0f">
+  <title>Privex AI - Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .settings-page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .settings-card {
+      background: rgba(20, 20, 30, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+    }
+    .settings-section {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .settings-section h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.7;
+      margin: 8px 0 2px;
+    }
+    .settings-row {
+      display: grid;
+      gap: 8px;
+    }
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .status-text {
+      margin-top: 6px;
+      font-size: 13px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-bg"></div>
+  <main class="settings-page">
+    <div class="settings-header">
+      <div>
+        <h1 style="margin: 0;">Settings</h1>
+        <p style="margin: 6px 0 0; opacity: 0.7;">Manage your local preferences and API key.</p>
+      </div>
+      <a class="btn btn-ghost" href="../">Back to Chat</a>
+    </div>
+
+    <div class="settings-card">
+      <section class="settings-section">
+        <h3>API Key</h3>
+        <div class="settings-row">
+          <label for="apiKeyInput">API Key</label>
+          <input id="apiKeyInput" type="password" placeholder="Paste your API key" autocomplete="off">
+        </div>
+        <div class="settings-actions">
+          <button id="saveApiKeyBtn" class="btn btn-ghost">Save Key</button>
+          <button id="testConnectionBtn" class="btn btn-primary">Test Connection</button>
+          <button id="clearApiKeyBtn" class="btn btn-ghost">Clear Key</button>
+        </div>
+        <p id="apiStatus" class="status-text">Not set</p>
+      </section>
+
+      <section class="settings-section">
+        <h3>Appearance</h3>
+        <div class="settings-row">
+          <label for="themeSelect">Theme</label>
+          <select id="themeSelect">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="system">System</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label for="fontSelect">Font Size</label>
+          <select id="fontSelect">
+            <option value="sm">Small</option>
+            <option value="md">Normal</option>
+            <option value="lg">Large</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label for="widthSelect">Chat Width</label>
+          <select id="widthSelect">
+            <option value="compact">Compact</option>
+            <option value="normal">Normal</option>
+            <option value="wide">Wide</option>
+          </select>
+        </div>
+        <label class="toggle-row">
+          <input id="timestampsToggle" type="checkbox"> Show timestamps
+        </label>
+      </section>
+    </div>
+  </main>
+
+  <script src="../config.js"></script>
+  <script type="module" src="./settings.js"></script>
+</body>
+</html>

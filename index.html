@@ -17,23 +17,6 @@
 <body>
   <div class="app-bg"></div>
 
-  <div id="onboardingOverlay" class="overlay hidden" aria-label="Welcome walkthrough" role="dialog" aria-modal="true">
-    <div class="onboarding-card">
-      <div class="onboarding-head">
-        <img src="assets/logo.svg" alt="Privex AI logo" class="brand-mark">
-        <div>
-          <h1>Privex AI</h1>
-          <p>Private model testing on your own key.</p>
-        </div>
-      </div>
-      <div id="demoStage" class="demo-stage" aria-live="polite"></div>
-      <div class="onboarding-actions">
-        <button id="startDemoBtn" class="btn btn-primary">Start Demo</button>
-        <button id="skipDemoBtn" class="btn btn-ghost">Skip</button>
-      </div>
-    </div>
-  </div>
-
   <div class="app-shell">
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-top">
@@ -80,69 +63,10 @@
           <button id="sendBtn" class="send-btn" aria-label="Send">➤</button>
         </div>
         <div class="composer-meta">
-          <span id="chatLockState">Chat locked until API test succeeds</span>
-          <button id="openApiFromComposer" class="meta-link">Open API Setup</button>
+          <span id="chatLockState">Ready to chat</span>
         </div>
       </footer>
     </main>
-
-    <aside id="rightPanel" class="right-panel hidden">
-      <div class="panel-head">
-        <h3>Runtime Controls</h3>
-      </div>
-      <div class="panel-body">
-        <label for="panelModelSelect">Model</label>
-        <select id="panelModelSelect"></select>
-        <div class="runtime-note">
-          <strong>Universal Key Mode</strong>
-          <p>Use any provider key. Privex auto-detects endpoint compatibility.</p>
-        </div>
-        <button id="openApiPanelSetup" class="btn btn-primary full">Open API Setup</button>
-      </div>
-    </aside>
-  </div>
-
-  <div id="settingsModal" class="overlay hidden" role="dialog" aria-modal="true" aria-label="App settings">
-    <div class="modal-card">
-      <h2>Settings</h2>
-      
-      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">Display</h3>
-      <label for="themeSelect">Theme</label>
-      <select id="themeSelect">
-        <option value="dark">Dark</option>
-        <option value="light">Light</option>
-        <option value="system">System</option>
-      </select>
-      <label for="fontSelect">Font Size</label>
-      <select id="fontSelect">
-        <option value="sm">Small</option>
-        <option value="md">Normal</option>
-        <option value="lg">Large</option>
-      </select>
-      <label for="widthSelect">Chat Width</label>
-      <select id="widthSelect">
-        <option value="compact">Compact</option>
-        <option value="normal">Normal</option>
-        <option value="wide">Wide</option>
-      </select>
-      <label class="toggle-row"><input id="timestampsToggle" type="checkbox"> Show timestamps</label>
-      
-      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">API Configuration</h3>
-      <label for="modelSelect">AI Model</label>
-      <select id="modelSelect"></select>
-      <label for="apiKeyInput">API Key</label>
-      <input id="apiKeyInput" type="password" placeholder="Paste your API key here" autocomplete="off">
-      <button id="testConnectionBtn" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Test Connection</button>
-      <p id="apiStatus" class="status-text" style="margin-top: 8px;">Idle</p>
-      
-      <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; opacity: 0.8;">Data</h3>
-      <div class="settings-actions">
-        <button id="clearApiKeyBtn" class="btn btn-ghost">Clear API Key</button>
-        <button id="clearDataBtn" class="btn btn-ghost">Clear Local Data</button>
-        <button id="settingsExportBtn" class="btn btn-primary">Export Data</button>
-      </div>
-      <button id="closeSettingsBtn" class="btn btn-ghost" style="margin-top: 12px;">Close</button>
-    </div>
   </div>
 
   <div id="offlineBanner" class="offline-banner hidden">You are offline. Cached chat history is still available.</div>

@@ -52,7 +52,7 @@ export async function sendMessage(conversationId, userMessage, onChunk, onDone, 
   }
   
   // Check API key
-  if (!ApiConfig.isApiKeyPresent()) {
+  if (!ApiConfig.isApiKeyAvailable()) {
     if (onError) onError(401, 'API key not configured. Please set up your API key first.');
     return null;
   }

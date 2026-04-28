@@ -264,12 +264,8 @@ export async function sendRequest(messages, systemPrompt, config = {}, onError) 
   const apiKey = getApiKey();
   
   if (!apiKey) {
-    const err = {
-      ok: false,
-      status: 401,
-      message: 'No API key present. Configure one before sending requests.'
-    };
-    if (onError) onError(err.status, err.message);
+    const err = { error: 'NO_API_KEY' };
+    if (onError) onError(401, 'NO_API_KEY');
     return err;
   }
   
@@ -333,9 +329,8 @@ export async function streamRequest(messages, systemPrompt, config = {}, onChunk
   const apiKey = getApiKey();
   
   if (!apiKey) {
-    const message = 'No API key present. Configure one before streaming.';
-    if (onError) onError(401, message);
-    return;
+    if (onError) onError(401, 'NO_API_KEY');
+    return { error: 'NO_API_KEY' };
   }
   
   stopStreaming();

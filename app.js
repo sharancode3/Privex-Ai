@@ -2,37 +2,17 @@ import { Storage } from './storage.js';
 import { renderMarkdown } from './markdown.js';
 import { applyTheme, applyFontSize, applyWidth } from './themes.js';
 import { ApiConfig } from './services/apiConfig.js';
-import { ApiClient } from './services/apiClient.js';
 import ChatEngine from './core/chatEngine.js';
 import { ExportUtils } from './utils/export.js';
 
 const LS = {
-  apiKey: 'privexai_openai_key',
   model: 'privexai_model',
   activeConversationId: 'privexai_active_conv_id',
-  apiValidated: 'privexai_api_validated',
-  onboardingSeen: 'privexai_onboarding_seen',
   theme: 'privexai_theme',
   font: 'privexai_font_size',
   width: 'privexai_chat_width',
   showTimestamps: 'privexai_show_timestamps'
 };
-
-const MODELS = [
-  'gpt-4o-mini',
-  'gpt-4o',
-  'gpt-4.1-mini',
-  'gpt-4.1',
-  'gemini-2.0-flash',
-  'gemini-2.5-pro',
-  'claude-3-5-haiku',
-  'claude-3-5-sonnet',
-  'claude-sonnet-4',
-  'grok-2-latest',
-  'grok-beta',
-  'Qwen/Qwen2.5-72B-Instruct',
-  'meta-llama/Meta-Llama-3.1-8B-Instruct'
-];
 
 const DEFAULTS = {
   model: 'gpt-4o-mini',
@@ -56,49 +36,8 @@ function $(id) {
   return document.getElementById(id);
 }
 
-function xorObfuscate(value) {
-  // DEPRECATED: Use ApiConfig.setApiKey() instead
-  const key = 'privex-ai-local';
-  let out = '';
-  for (let i = 0; i < value.length; i += 1) {
-    out += String.fromCharCode(value.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-  }
-  return btoa(out);
-}
-
-function xorDeobfuscate(value) {
-  // DEPRECATED: Use ApiConfig.getApiKey() instead
-  try {
-    const decoded = atob(value);
-    const key = 'privex-ai-local';
-    let out = '';
-    for (let i = 0; i < decoded.length; i += 1) {
-      out += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-    }
-    return out;
-  } catch {
-    return '';
-  }
-}
-
-function getApiKey() {
-  // Wrapper for ApiConfig
-  return ApiConfig.getApiKey();
-}
-
-function setApiKey(raw) {
-  // Wrapper for ApiConfig
-  ApiConfig.setApiKey(raw);
-}
-
 function nowTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function showStatus(text, type = '') {
-  dom.apiStatus.textContent = text;
-  dom.apiStatus.classList.remove('success', 'error');
-  if (type) dom.apiStatus.classList.add(type);
 }
 
 function getSetting(key, fallback = '') {
@@ -113,9 +52,7 @@ function boolSetting(key, fallback = false) {
 }
 
 function setLockedState() {
-  // No longer check apiValidated - allow chats without API key
-  // User just won't be able to send messages with error feedback
-  const hasApiKey = ApiConfig.isApiKeyPresent();
+  const hasApiKey = ApiConfig.isApiKeyAvailable();
   dom.messageInput.disabled = state.isStreaming;
   dom.sendBtn.disabled = state.isStreaming;
   
@@ -124,24 +61,13 @@ function setLockedState() {
   } else if (hasApiKey) {
     dom.chatLockState.textContent = 'Ready to chat privately';
   } else {
-    dom.chatLockState.textContent = 'Set API key to start chatting';
+    dom.chatLockState.textContent = 'Add API key in Settings to chat';
   }
 }
 
 function autoResizeTextarea() {
   dom.messageInput.style.height = 'auto';
   dom.messageInput.style.height = `${Math.min(dom.messageInput.scrollHeight, 180)}px`;
-}
-
-function buildModelSelect(selectEl, preferredModel) {
-  selectEl.innerHTML = MODELS.map((model) => `<option value="${model}">${model}</option>`).join('');
-  selectEl.value = MODELS.includes(preferredModel) ? preferredModel : DEFAULTS.model;
-}
-
-function syncModelInputs(model) {
-  buildModelSelect(dom.modelSelect, model);
-  buildModelSelect(dom.panelModelSelect, model);
-  dom.panelModelSelect.value = dom.modelSelect.value;
 }
 
 function markdownWithCodeCopy(text) {
@@ -277,25 +203,23 @@ async function createNewChat() {
   await ensureConversation();
 }
 
-// DEPRECATED: No longer used with ChatEngine
-function activeSystemPrompt() {
-  return 'You are Privex AI. Be concise for simple requests and detailed where needed.';
-}
-
-// DEPRECATED: No longer used with ChatEngine  
-function toMessageArray(messages) {
-  return messages.map((m) => ({
-    role: m.role,
-    content: m.content
-  }));
+async function addInlineApiKeyNotice() {
+  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](/settings/)';
+  const notice = await Storage.addMessage(state.activeConversationId, {
+    role: 'model',
+    content,
+    timestamp: Date.now()
+  });
+  state.messages.push(notice);
+  renderMessages();
 }
 
 async function sendMessage(text) {
   if (!text.trim() || state.isStreaming) return;
   
   // Check if API key is present BEFORE allowing send
-  if (!ApiConfig.isApiKeyPresent()) {
-    showStatus('⚠️ API key not configured. Open Settings to add your API key.', 'error');
+  if (!ApiConfig.isApiKeyAvailable()) {
+    await addInlineApiKeyNotice();
     return;
   }
 
@@ -387,8 +311,8 @@ async function regenerateFromMessage(aiMessageId) {
   }
   if (userIndex < 0) return;
 
-  if (!ApiConfig.isApiKeyPresent()) {
-    showStatus('⚠️ API key not configured. Open Settings to add your API key.', 'error');
+  if (!ApiConfig.isApiKeyAvailable()) {
+    await addInlineApiKeyNotice();
     return;
   }
 
@@ -437,46 +361,6 @@ async function regenerateFromMessage(aiMessageId) {
   );
 }
 
-async function runConnectionTest() {
-  const key = dom.apiKeyInput.value.trim() || getApiKey();
-  if (!key) {
-    showStatus('Enter an API key first.', 'error');
-    return;
-  }
-
-  const model = dom.modelSelect.value;
-
-  localStorage.setItem(LS.model, model);
-  setApiKey(key);
-
-  showStatus('Testing connection...', '');
-  dom.testConnectionBtn.disabled = true;
-
-  const result = await ApiClient.testConnection(key, model);
-
-  dom.testConnectionBtn.disabled = false;
-
-  if (result.ok) {
-    showStatus('Connection successful. Chat ready.', 'success');
-    setLockedState();
-    setTimeout(() => dom.apiModal.classList.add('hidden'), 500);
-  } else {
-    showStatus(result.message || 'Connection failed.', 'error');
-    setLockedState();
-  }
-}
-
-// DEPRECATED: Use ExportUtils instead
-function downloadText(filename, text) {
-  const blob = new Blob([text], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 async function exportData() {
   // Build full conversation data with messages
   const conversations = await Storage.getAllConversations();
@@ -506,72 +390,6 @@ function applySavedAppearance() {
   applyTheme(theme);
   applyFontSize(font);
   applyWidth(width);
-
-  dom.themeSelect.value = theme;
-  dom.fontSelect.value = font;
-  dom.widthSelect.value = width;
-  dom.timestampsToggle.checked = boolSetting(LS.showTimestamps, false);
-}
-
-function bindAppearanceEvents() {
-  dom.themeSelect.addEventListener('change', () => {
-    localStorage.setItem(LS.theme, dom.themeSelect.value);
-    applyTheme(dom.themeSelect.value);
-  });
-
-  dom.fontSelect.addEventListener('change', () => {
-    localStorage.setItem(LS.font, dom.fontSelect.value);
-    applyFontSize(dom.fontSelect.value);
-  });
-
-  dom.widthSelect.addEventListener('change', () => {
-    localStorage.setItem(LS.width, dom.widthSelect.value);
-    applyWidth(dom.widthSelect.value);
-  });
-
-  dom.timestampsToggle.addEventListener('change', () => {
-    localStorage.setItem(LS.showTimestamps, String(dom.timestampsToggle.checked));
-    renderMessages();
-  });
-}
-
-function typeDemoBubble(role, text, delay = 0) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const bubble = document.createElement('div');
-      bubble.className = `demo-bubble ${role}`;
-      dom.demoStage.appendChild(bubble);
-
-      let idx = 0;
-      const timer = setInterval(() => {
-        bubble.textContent = text.slice(0, idx);
-        idx += 1;
-        if (idx > text.length) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 26);
-    }, delay);
-  });
-}
-
-async function runOnboardingDemo() {
-  dom.demoStage.innerHTML = '';
-  await typeDemoBubble('ai', 'Enter your API key');
-  await typeDemoBubble('user', 'Run key test', 420);
-  await typeDemoBubble('ai', 'Start chatting privately', 420);
-  const glow = document.createElement('div');
-  glow.className = 'demo-bubble ai';
-  glow.textContent = 'Ready';
-  glow.style.borderColor = 'rgba(112, 104, 255, 0.75)';
-  glow.style.boxShadow = '0 0 0 1px rgba(112, 104, 255, 0.35), 0 0 24px rgba(112, 104, 255, 0.45)';
-  dom.demoStage.appendChild(glow);
-
-  setTimeout(() => {
-    localStorage.setItem(LS.onboardingSeen, 'true');
-    dom.onboardingOverlay.classList.add('hidden');
-    if (!boolSetting(LS.apiValidated, false)) dom.apiModal.classList.remove('hidden');
-  }, 700);
 }
 
 function setupInstallPrompt() {
@@ -628,46 +446,15 @@ function bindUIEvents() {
     state.sidebarOpen = !state.sidebarOpen;
     dom.sidebar.classList.toggle('open', state.sidebarOpen);
   });
-
-  dom.startDemoBtn.addEventListener('click', runOnboardingDemo);
-
-  dom.skipDemoBtn.addEventListener('click', () => {
-    localStorage.setItem(LS.onboardingSeen, 'true');
-    dom.onboardingOverlay.classList.add('hidden');
-    if (!boolSetting(LS.apiValidated, false)) dom.apiModal.classList.remove('hidden');
-  });
-
-  dom.testConnectionBtn.addEventListener('click', runConnectionTest);
-
-  dom.modelSelect.addEventListener('change', () => {
-    localStorage.setItem(LS.model, dom.modelSelect.value);
-  });
-
   dom.settingsBtn.addEventListener('click', () => {
-    const model = getSetting(LS.model, DEFAULTS.model);
-    syncModelInputs(model);
-    dom.settingsModal.classList.remove('hidden');
+    window.location.href = './settings/';
   });
-  
+
   dom.sidebarSettingsBtn.addEventListener('click', () => {
-    const model = getSetting(LS.model, DEFAULTS.model);
-    syncModelInputs(model);
-    dom.settingsModal.classList.remove('hidden');
+    window.location.href = './settings/';
   });
-  
-  dom.closeSettingsBtn.addEventListener('click', () => dom.settingsModal.classList.add('hidden'));
 
-  dom.settingsExportBtn.addEventListener('click', exportData);
   dom.exportBtn.addEventListener('click', exportData);
-
-  dom.clearApiKeyBtn.addEventListener('click', () => {
-    ApiConfig.clearApiKey();
-    dom.apiKeyInput.value = '';
-    showStatus('Local key cleared.', '');
-    setLockedState();
-  });
-
-  dom.clearDataBtn.addEventListener('click', clearAllData);
 
   dom.messages.addEventListener('click', (event) => {
     const button = event.target.closest('.code-copy');
@@ -680,7 +467,6 @@ function bindUIEvents() {
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      dom.settingsModal.classList.add('hidden');
       if (window.innerWidth <= 860) {
         dom.sidebar.classList.remove('open');
         state.sidebarOpen = false;
@@ -691,14 +477,10 @@ function bindUIEvents() {
 
 function cacheDom() {
   [
-    'onboardingOverlay', 'demoStage', 'startDemoBtn', 'skipDemoBtn',
     'sidebar', 'newChatBtn', 'chatList', 'sidebarSettingsBtn', 'exportBtn',
     'activeTitle', 'menuBtn', 'installBtn', 'settingsBtn',
     'messages', 'messageInput', 'sendBtn', 'chatLockState',
-    'rightPanel',
-    'settingsModal', 'themeSelect', 'fontSelect', 'widthSelect', 'timestampsToggle',
-    'clearApiKeyBtn', 'clearDataBtn', 'settingsExportBtn', 'closeSettingsBtn',
-    'offlineBanner', 'modelSelect', 'apiKeyInput', 'testConnectionBtn', 'apiStatus'
+    'offlineBanner'
   ].forEach((id) => {
     dom[id] = $(id);
   });
@@ -707,11 +489,6 @@ function cacheDom() {
 async function init() {
   cacheDom();
   applySavedAppearance();
-
-  const key = getApiKey();
-  const model = getSetting(LS.model, DEFAULTS.model);
-
-  bindAppearanceEvents();
   bindUIEvents();
   setupInstallPrompt();
   setupOfflineBanner();
@@ -719,12 +496,6 @@ async function init() {
 
   await Storage.init();
   await ensureConversation();
-
-  // Everything stays hidden - just pure chat interface
-  dom.onboardingOverlay.classList.add('hidden');
-  
-  // Populate API key field if exists (for settings modal)
-  if (key) dom.apiKeyInput.value = key;
 
   setLockedState();
 }

@@ -14,7 +14,11 @@ function renderInline(text) {
   out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   out = out.replace(/_([^_]+)_/g, '<em>$1</em>');
   out = out.replace(/~~([^~]+)~~/g, '<s>$1</s>');
-  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  out = out.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/|\.\/)[^\s)]+)\)/g, (_match, label, href) => {
+    const isExternal = /^https?:\/\//.test(href);
+    const target = isExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
+    return `<a href="${href}"${target}>${label}</a>`;
+  });
   return out;
 }
 

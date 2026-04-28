@@ -58,6 +58,14 @@ export function isApiKeyPresent() {
 }
 
 /**
+ * Check if API key is available
+ * @returns {boolean}
+ */
+export function isApiKeyAvailable() {
+  return isApiKeyPresent();
+}
+
+/**
  * Clear API key from storage
  */
 export function clearApiKey() {
@@ -131,6 +139,7 @@ export const ApiConfig = {
   setApiKey,
   getApiKey,
   isApiKeyPresent,
+  isApiKeyAvailable,
   clearApiKey,
   getProviderPreference,
   setProviderPreference,
