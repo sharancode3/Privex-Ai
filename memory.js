@@ -31,7 +31,7 @@
     style.textContent = `
       #memory-backdrop {
         position: fixed; inset: 0; z-index: 1600;
-        background: rgba(7,7,12,0.55);
+        background: var(--overlay);
         backdrop-filter: blur(4px);
         opacity: 0; pointer-events: none;
         transition: opacity 0.2s ease;
@@ -40,9 +40,9 @@
       #memory-panel {
         position: fixed; top: 0; right: 0; z-index: 1700;
         width: min(94vw, 420px); height: 100vh;
-        background: #12121c;
-        border-left: 1px solid rgba(255,255,255,0.08);
-        box-shadow: -24px 0 70px rgba(0,0,0,0.5);
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-lg);
         transform: translateX(100%);
         transition: transform 0.24s ease;
         display: flex; flex-direction: column;
@@ -50,38 +50,38 @@
       #memory-panel.open { transform: translateX(0); }
       .mp-head {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding: 16px; border-bottom: 1px solid var(--border-subtle);
       }
-      .mp-title { font-size: 16px; font-weight: 700; color: #eeeef5; }
+      .mp-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
       .mp-close {
         width: 32px; height: 32px; border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: #1a1a28; color: #eeeef5; cursor: pointer;
+        border: 1px solid var(--border-default);
+        background: var(--bg-elevated); color: var(--text-primary); cursor: pointer;
       }
       .mp-body { padding: 16px; overflow-y: auto; display: grid; gap: 12px; }
       .mp-row { display: flex; gap: 8px; }
       .mp-input {
-        flex: 1; border: 1px solid rgba(255,255,255,0.1);
-        background: #1a1a28; color: #eeeef5; border-radius: 10px;
+        flex: 1; border: 1px solid var(--border-default);
+        background: var(--bg-elevated); color: var(--text-primary); border-radius: 10px;
         padding: 10px 12px; font-size: 14px; outline: none;
       }
       .mp-btn {
-        border: 1px solid rgba(255,255,255,0.12);
-        background: #1a1a28; color: #eeeef5;
+        border: 1px solid var(--border-default);
+        background: var(--bg-elevated); color: var(--text-primary);
         border-radius: 10px; padding: 9px 12px; font-size: 13px; cursor: pointer;
       }
-      .mp-btn.primary { background: linear-gradient(135deg, #7c6bff, #a855f7); border-color: transparent; }
-      .mp-btn.danger { border-color: rgba(248,113,113,0.35); color: #fda4af; }
+      .mp-btn.primary { background: var(--accent); color: var(--text-inverse); border-color: transparent; }
+      .mp-btn.danger { border-color: var(--status-red); color: var(--status-red); }
       .mp-list { display: grid; gap: 8px; }
-      .mp-empty { font-size: 13px; color: #8888a8; }
+      .mp-empty { font-size: 13px; color: var(--text-tertiary); }
       .mp-item {
-        border: 1px solid rgba(255,255,255,0.09);
-        background: #171724; border-radius: 10px; padding: 10px;
+        border: 1px solid var(--border-default);
+        background: var(--bg-elevated); border-radius: 10px; padding: 10px;
       }
       .mp-item.off { opacity: 0.6; }
-      .mp-item-content { color: #eeeef5; font-size: 13px; line-height: 1.55; margin-bottom: 8px; }
+      .mp-item-content { color: var(--text-primary); font-size: 13px; line-height: 1.55; margin-bottom: 8px; }
       .mp-item-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-      .mp-footnote { font-size: 12px; color: #8888a8; line-height: 1.5; }
+      .mp-footnote { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
     `;
     document.head.appendChild(style);
 

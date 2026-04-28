@@ -1,4 +1,4 @@
-const ACCENT_PRESETS = ['#6366f1', '#a855f7', '#06b6d4', '#22c55e', '#f97316', '#ec4899', '#ef4444', '#f59e0b'];
+const ACCENT_PRESETS = ['#ffffff', '#d4d4d4', '#9a9a9a', '#404040', '#0a0a0a'];
 
 export function hexToRgba(hex, alpha = 1) {
   const cleaned = (hex || '').replace('#', '');
@@ -13,7 +13,7 @@ export function hexToRgba(hex, alpha = 1) {
 }
 
 export function darken(hex, percent = 10) {
-  const cleaned = (hex || '#6366f1').replace('#', '');
+  const cleaned = (hex || '#ffffff').replace('#', '');
   const normalized = cleaned.length === 3
     ? cleaned.split('').map((v) => v + v).join('')
     : cleaned;
@@ -48,7 +48,11 @@ export function resolveTheme(theme) {
 
 export function applyTheme(theme) {
   const resolved = resolveTheme(theme);
+  document.documentElement.classList.add('theme-transitioning');
   document.documentElement.dataset.theme = resolved;
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transitioning');
+  }, 300);
 }
 
 export function applyFontSize(font) {

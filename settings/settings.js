@@ -10,6 +10,11 @@ const LS = {
   showTimestamps: 'privexai_show_timestamps'
 };
 
+const THEME_LS = {
+  current: 'privex-theme',
+  legacy: LS.theme
+};
+
 const DEFAULTS = {
   model: 'gpt-4o-mini',
   theme: 'dark',
@@ -34,11 +39,30 @@ function getSetting(key, fallback = '') {
   return raw == null ? fallback : raw;
 }
 
+function getStoredTheme() {
+  const preferred = getSetting(THEME_LS.current, '');
+  if (preferred) return preferred;
+  return getSetting(THEME_LS.legacy, DEFAULTS.theme);
+}
+
+function migrateThemeKeyIfNeeded(theme) {
+  if (!localStorage.getItem(THEME_LS.current) && theme) {
+    localStorage.setItem(THEME_LS.current, theme);
+  }
+}
+
+function setSelectedThemeCard(theme) {
+  document.querySelectorAll('.theme-card').forEach((card) => {
+    card.classList.toggle('is-selected', card.dataset.themeChoice === theme);
+  });
+}
+
 function applySavedAppearance() {
-  const theme = getSetting(LS.theme, DEFAULTS.theme);
+  const theme = getStoredTheme();
   const font = getSetting(LS.font, DEFAULTS.font);
   const width = getSetting(LS.width, DEFAULTS.width);
 
+  migrateThemeKeyIfNeeded(theme);
   applyTheme(theme);
   applyFontSize(font);
   applyWidth(width);
@@ -47,6 +71,8 @@ function applySavedAppearance() {
   dom.fontSelect.value = font;
   dom.widthSelect.value = width;
   dom.timestampsToggle.checked = getSetting(LS.showTimestamps, 'false') === 'true';
+
+  setSelectedThemeCard(theme);
 }
 
 function setStatus(text, type = '') {
@@ -105,8 +131,10 @@ function clearApiKey() {
 
 function bindAppearanceEvents() {
   dom.themeSelect.addEventListener('change', () => {
-    localStorage.setItem(LS.theme, dom.themeSelect.value);
+    localStorage.setItem(THEME_LS.current, dom.themeSelect.value);
+    localStorage.setItem(THEME_LS.legacy, dom.themeSelect.value);
     applyTheme(dom.themeSelect.value);
+    setSelectedThemeCard(dom.themeSelect.value);
   });
 
   dom.fontSelect.addEventListener('change', () => {
@@ -124,6 +152,32 @@ function bindAppearanceEvents() {
   });
 }
 
+function bindTabs() {
+  const tabs = Array.from(document.querySelectorAll('.settings-tab'));
+  const panels = Array.from(document.querySelectorAll('.settings-panel'));
+  if (!tabs.length || !panels.length) return;
+
+  const setActive = (name) => {
+    tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.tab === name));
+    panels.forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => setActive(tab.dataset.tab));
+  });
+}
+
+function bindThemeCards() {
+  document.querySelectorAll('.theme-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const choice = card.dataset.themeChoice;
+      if (!choice) return;
+      dom.themeSelect.value = choice;
+      dom.themeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
 function init() {
   applySavedAppearance();
   loadApiKey();
@@ -133,6 +187,8 @@ function init() {
   dom.clearApiKeyBtn.addEventListener('click', clearApiKey);
 
   bindAppearanceEvents();
+  bindTabs();
+  bindThemeCards();
 }
 
 init();

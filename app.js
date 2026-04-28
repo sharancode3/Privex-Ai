@@ -14,6 +14,11 @@ const LS = {
   showTimestamps: 'privexai_show_timestamps'
 };
 
+const THEME_LS = {
+  current: 'privex-theme',
+  legacy: LS.theme
+};
+
 const DEFAULTS = {
   model: 'gpt-4o-mini',
   theme: 'dark',
@@ -45,6 +50,33 @@ function getSetting(key, fallback = '') {
   return raw == null ? fallback : raw;
 }
 
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function getStoredTheme() {
+  const preferred = getSetting(THEME_LS.current, '');
+  if (preferred) return preferred;
+  return getSetting(THEME_LS.legacy, DEFAULTS.theme);
+}
+
+function migrateThemeKeyIfNeeded(theme) {
+  if (!localStorage.getItem(THEME_LS.current) && theme) {
+    localStorage.setItem(THEME_LS.current, theme);
+  }
+}
+
+function syncSendButtonState() {
+  const hasApiKey = ApiConfig.isApiKeyAvailable();
+  const hasText = !!(dom.messageInput.value || '').trim();
+  dom.sendBtn.disabled = state.isStreaming || !hasApiKey || !hasText;
+}
+
 function boolSetting(key, fallback = false) {
   const raw = localStorage.getItem(key);
   if (raw == null) return fallback;
@@ -54,15 +86,18 @@ function boolSetting(key, fallback = false) {
 function setLockedState() {
   const hasApiKey = ApiConfig.isApiKeyAvailable();
   dom.messageInput.disabled = state.isStreaming;
-  dom.sendBtn.disabled = state.isStreaming;
+  document.documentElement.classList.toggle('is-streaming', state.isStreaming);
+  dom.chatLockState.classList.toggle('is-warn', !hasApiKey);
   
   if (state.isStreaming) {
     dom.chatLockState.textContent = 'Streaming response...';
   } else if (hasApiKey) {
-    dom.chatLockState.textContent = 'Ready to chat privately';
+    dom.chatLockState.textContent = 'Privex AI uses your API key directly. No data leaves your device.';
   } else {
-    dom.chatLockState.textContent = 'Add API key in Settings to chat';
+    dom.chatLockState.textContent = 'Add an API key in Settings to start chatting';
   }
+
+  syncSendButtonState();
 }
 
 function autoResizeTextarea() {
@@ -77,12 +112,23 @@ function markdownWithCodeCopy(text) {
   holder.innerHTML = html;
 
   holder.querySelectorAll('pre code').forEach((codeEl) => {
+    const pre = codeEl.parentElement;
+    if (!pre) return;
+    pre.style.position = 'relative';
+
     const copy = document.createElement('button');
     copy.className = 'code-copy';
     copy.type = 'button';
     copy.dataset.code = encodeURIComponent(codeEl.textContent || '');
-    copy.textContent = 'Copy code';
-    codeEl.parentElement.insertAdjacentElement('afterend', copy);
+    copy.innerHTML = `
+      <svg class="icon" width="14" height="14" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="5" width="9" height="9" rx="1.5"></rect>
+        <rect x="2" y="2" width="9" height="9" rx="1.5"></rect>
+      </svg>
+      <span class="sr-only">Copy</span>
+    `;
+
+    pre.appendChild(copy);
   });
 
   return holder.innerHTML;
@@ -91,7 +137,45 @@ function markdownWithCodeCopy(text) {
 function renderMessages() {
   const showTimes = boolSetting(LS.showTimestamps, false);
   if (!state.messages.length) {
-    dom.messages.innerHTML = '<div class="message-stack"><div class="empty-state"><h3>Privex AI Workspace</h3><p>Universal BYOK testing with local-only memory and zero server chat storage.</p><div class="empty-pill-row"><span class="empty-pill">Universal API key</span><span class="empty-pill">Streaming enabled</span><span class="empty-pill">Private local history</span></div></div></div>';
+    const hasApiKey = ApiConfig.isApiKeyAvailable();
+    dom.messages.innerHTML = `
+      <div class="message-stack">
+        <div class="welcome">
+          <div class="welcome-inner">
+            <div class="welcome-mark" aria-hidden="true">
+              <svg width="64" height="64" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M10 17V7h4a3 3 0 0 1 0 6h-4"></path>
+              </svg>
+            </div>
+            <div class="welcome-title">Privex AI</div>
+            <div class="welcome-sub">${hasApiKey ? 'Your private AI workspace. Start a conversation when you’re ready.' : 'Your private AI workspace. Add an API key in Settings to begin.'}</div>
+            <div class="welcome-pills" aria-label="Capabilities">
+              <span class="welcome-pill">
+                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 1.5l6 2.5v5c0 3.5-2.5 5.5-6 6.8C4.5 14.5 2 12.5 2 9V4l6-2.5z"></path>
+                </svg>
+                Local only
+              </span>
+              <span class="welcome-pill">
+                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 2L6 9h3l-4 5 5-7H7l4-5z"></path>
+                </svg>
+                Streaming
+              </span>
+              <span class="welcome-pill">
+                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="6" cy="8" r="3"></circle>
+                  <path d="M9 8h5"></path>
+                  <path d="M12 8v2"></path>
+                </svg>
+                BYOK
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -99,16 +183,33 @@ function renderMessages() {
   stack.className = 'message-stack';
 
   state.messages.forEach((msg) => {
+    const isUser = msg.role === 'user';
     const wrapper = document.createElement('div');
-    wrapper.className = `msg ${msg.role === 'user' ? 'user' : 'ai'}`;
+    wrapper.className = `msg ${isUser ? 'user' : 'ai'}`;
+
+    if (!isUser) {
+      const avatar = document.createElement('div');
+      avatar.className = 'ai-avatar';
+      avatar.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M10 17V7h4a3 3 0 0 1 0 6h-4"></path>
+        </svg>
+      `;
+      wrapper.appendChild(avatar);
+    }
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
 
     const content = document.createElement('div');
     content.className = 'message-content';
-    if (msg.role === 'model') {
-      content.innerHTML = markdownWithCodeCopy(msg.content || '');
+    if (!isUser) {
+      if (state.isStreaming && !msg.content) {
+        content.innerHTML = '<span class="typing" aria-label="Typing"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+      } else {
+        content.innerHTML = markdownWithCodeCopy(msg.content || '');
+      }
     } else {
       content.textContent = msg.content || '';
     }
@@ -131,7 +232,7 @@ function renderMessages() {
     copyBtn.addEventListener('click', () => navigator.clipboard.writeText(msg.content || ''));
     actions.appendChild(copyBtn);
 
-    if (msg.role === 'model') {
+    if (!isUser) {
       const regenBtn = document.createElement('button');
       regenBtn.className = 'btn btn-ghost';
       regenBtn.textContent = 'Regenerate';
@@ -152,12 +253,39 @@ function renderMessages() {
 
 function renderConversationList() {
   dom.chatList.innerHTML = '';
+  document.querySelectorAll('.chat-item[data-menu-open="true"]').forEach((el) => {
+    el.dataset.menuOpen = 'false';
+  });
+
   for (const conv of state.conversations) {
-    const item = document.createElement('button');
-    item.type = 'button';
+    const item = document.createElement('div');
     item.className = `chat-item ${conv.id === state.activeConversationId ? 'active' : ''}`;
-    item.innerHTML = `<strong>${conv.title || 'New Chat'}</strong><span>${conv.lastPreview || 'No messages yet'}</span>`;
-    item.addEventListener('click', async () => {
+    item.dataset.convId = conv.id;
+    item.dataset.menuOpen = 'false';
+
+    item.innerHTML = `
+      <button type="button" class="chat-item-main" aria-label="Open conversation">
+        <span class="chat-item-title">${escapeHtml(conv.title || 'New Chat')}</span>
+      </button>
+      <button type="button" class="chat-item-menu-btn" aria-label="Conversation menu" aria-haspopup="menu" aria-expanded="false">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="3" cy="8" r="1.5"></circle>
+          <circle cx="8" cy="8" r="1.5"></circle>
+          <circle cx="13" cy="8" r="1.5"></circle>
+        </svg>
+      </button>
+      <div class="chat-item-menu" role="menu">
+        <button type="button" role="menuitem" data-action="rename">Rename</button>
+        <button type="button" role="menuitem" data-action="export">Export</button>
+        <button type="button" role="menuitem" data-action="delete">Delete</button>
+      </div>
+    `;
+
+    const mainBtn = item.querySelector('.chat-item-main');
+    const menuBtn = item.querySelector('.chat-item-menu-btn');
+    const menu = item.querySelector('.chat-item-menu');
+
+    const openConversation = async () => {
       state.activeConversationId = conv.id;
       localStorage.setItem(LS.activeConversationId, conv.id);
       await loadMessages(conv.id);
@@ -165,9 +293,56 @@ function renderConversationList() {
       renderConversationList();
       if (window.innerWidth <= 860) {
         dom.sidebar.classList.remove('open');
+        dom.sidebarBackdrop.classList.remove('is-active');
         state.sidebarOpen = false;
       }
+    };
+
+    mainBtn.addEventListener('click', openConversation);
+    item.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      menuBtn.click();
     });
+
+    menuBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = item.dataset.menuOpen === 'true';
+      document.querySelectorAll('.chat-item[data-menu-open="true"]').forEach((el) => {
+        if (el !== item) el.dataset.menuOpen = 'false';
+      });
+      item.dataset.menuOpen = isOpen ? 'false' : 'true';
+      menuBtn.setAttribute('aria-expanded', item.dataset.menuOpen);
+    });
+
+    menu.addEventListener('click', async (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      event.stopPropagation();
+      item.dataset.menuOpen = 'false';
+      menuBtn.setAttribute('aria-expanded', 'false');
+
+      const action = btn.dataset.action;
+      if (action === 'rename') {
+        const next = window.prompt('Rename chat', conv.title || 'New Chat');
+        if (!next) return;
+        await Storage.updateConversation(conv.id, { title: next.trim(), updatedAt: Date.now() });
+        await ensureConversation();
+      }
+
+      if (action === 'delete') {
+        const ok = window.confirm('Delete this chat? This cannot be undone.');
+        if (!ok) return;
+        await Storage.deleteConversation(conv.id);
+        await ensureConversation();
+      }
+
+      if (action === 'export') {
+        const conversation = await Storage.getConversation(conv.id);
+        const messages = await Storage.getMessages(conv.id);
+        ExportUtils.exportConversationAsJSON({ ...conversation, messages });
+      }
+    });
+
     dom.chatList.appendChild(item);
   }
 }
@@ -383,10 +558,11 @@ async function clearAllData() {
 }
 
 function applySavedAppearance() {
-  const theme = getSetting(LS.theme, DEFAULTS.theme);
+  const theme = getStoredTheme();
   const font = getSetting(LS.font, DEFAULTS.font);
   const width = getSetting(LS.width, DEFAULTS.width);
 
+  migrateThemeKeyIfNeeded(theme);
   applyTheme(theme);
   applyFontSize(font);
   applyWidth(width);
@@ -451,6 +627,14 @@ function bindUIEvents() {
     const text = dom.messageInput.value;
     dom.messageInput.value = '';
     autoResizeTextarea();
+    syncSendButtonState();
+
+    dom.sendBtn.classList.remove('is-pulsing');
+    // reflow to restart animation reliably
+    void dom.sendBtn.offsetWidth;
+    dom.sendBtn.classList.add('is-pulsing');
+    setTimeout(() => dom.sendBtn.classList.remove('is-pulsing'), 180);
+
     sendMessage(text);
   });
 
@@ -462,10 +646,27 @@ function bindUIEvents() {
   });
 
   dom.messageInput.addEventListener('input', autoResizeTextarea);
+  dom.messageInput.addEventListener('input', syncSendButtonState);
 
   dom.menuBtn.addEventListener('click', () => {
     state.sidebarOpen = !state.sidebarOpen;
     dom.sidebar.classList.toggle('open', state.sidebarOpen);
+    dom.sidebarBackdrop.classList.toggle('is-active', state.sidebarOpen);
+  });
+
+  dom.sidebarBackdrop.addEventListener('click', () => {
+    dom.sidebar.classList.remove('open');
+    dom.sidebarBackdrop.classList.remove('is-active');
+    state.sidebarOpen = false;
+  });
+
+  dom.activeTitle.addEventListener('click', async () => {
+    const active = state.conversations.find((c) => c.id === state.activeConversationId);
+    if (!active) return;
+    const next = window.prompt('Rename chat', active.title || 'New Chat');
+    if (!next) return;
+    await Storage.updateConversation(active.id, { title: next.trim(), updatedAt: Date.now() });
+    await ensureConversation();
   });
   dom.settingsBtn.addEventListener('click', () => {
     window.location.href = './settings/';
@@ -482,17 +683,26 @@ function bindUIEvents() {
     if (!button) return;
     const code = decodeURIComponent(button.dataset.code || '');
     navigator.clipboard.writeText(code);
-    button.textContent = 'Copied';
-    setTimeout(() => { button.textContent = 'Copy code'; }, 900);
+    button.dataset.copied = 'true';
+    setTimeout(() => { delete button.dataset.copied; }, 900);
   });
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       if (window.innerWidth <= 860) {
         dom.sidebar.classList.remove('open');
+        dom.sidebarBackdrop.classList.remove('is-active');
         state.sidebarOpen = false;
       }
     }
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.chat-item[data-menu-open="true"]').forEach((el) => {
+      el.dataset.menuOpen = 'false';
+      const btn = el.querySelector('.chat-item-menu-btn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
   });
 }
 
@@ -501,7 +711,7 @@ function cacheDom() {
     'sidebar', 'newChatBtn', 'chatList', 'sidebarSettingsBtn', 'exportBtn',
     'activeTitle', 'menuBtn', 'installBtn', 'settingsBtn',
     'messages', 'messageInput', 'sendBtn', 'chatLockState',
-    'offlineBanner'
+    'offlineBanner', 'sidebarBackdrop'
   ].forEach((id) => {
     dom[id] = $(id);
   });
