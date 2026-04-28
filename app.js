@@ -1,7 +1,10 @@
 import { Storage } from './storage.js';
-import { streamMessage, testConnection } from './gemini.js';
 import { renderMarkdown } from './markdown.js';
 import { applyTheme, applyFontSize, applyWidth } from './themes.js';
+import { ApiConfig } from './services/apiConfig.js';
+import { ApiClient } from './services/apiClient.js';
+import ChatEngine from './core/chatEngine.js';
+import { ExportUtils } from './utils/export.js';
 
 const LS = {
   apiKey: 'privexai_openai_key',
@@ -54,6 +57,7 @@ function $(id) {
 }
 
 function xorObfuscate(value) {
+  // DEPRECATED: Use ApiConfig.setApiKey() instead
   const key = 'privex-ai-local';
   let out = '';
   for (let i = 0; i < value.length; i += 1) {
@@ -63,6 +67,7 @@ function xorObfuscate(value) {
 }
 
 function xorDeobfuscate(value) {
+  // DEPRECATED: Use ApiConfig.getApiKey() instead
   try {
     const decoded = atob(value);
     const key = 'privex-ai-local';
@@ -77,18 +82,13 @@ function xorDeobfuscate(value) {
 }
 
 function getApiKey() {
-  const configured = window.PRIVEX_CONFIG?.openaiApiKey
-    || window.PRIVEX_CONFIG?.geminiApiKey
-    || window.PRIVEX_CONFIG?.anthropicApiKey
-    || window.PRIVEX_CONFIG?.xaiApiKey
-    || window.PRIVEX_CONFIG?.huggingFaceApiKey
-    || window.PRIVEX_CONFIG?.huggingfaceApiKey;
-  if (configured?.trim()) return configured.trim();
-  return xorDeobfuscate(localStorage.getItem(LS.apiKey) || '');
+  // Wrapper for ApiConfig
+  return ApiConfig.getApiKey();
 }
 
 function setApiKey(raw) {
-  localStorage.setItem(LS.apiKey, xorObfuscate(raw));
+  // Wrapper for ApiConfig
+  ApiConfig.setApiKey(raw);
 }
 
 function nowTime(ts) {
@@ -113,10 +113,19 @@ function boolSetting(key, fallback = false) {
 }
 
 function setLockedState() {
-  const isValid = boolSetting(LS.apiValidated, false);
-  dom.messageInput.disabled = !isValid || state.isStreaming;
-  dom.sendBtn.disabled = !isValid || state.isStreaming;
-  dom.chatLockState.textContent = isValid ? 'Ready to chat privately' : 'Chat locked until API test succeeds';
+  // No longer check apiValidated - allow chats without API key
+  // User just won't be able to send messages with error feedback
+  const hasApiKey = ApiConfig.isApiKeyPresent();
+  dom.messageInput.disabled = state.isStreaming;
+  dom.sendBtn.disabled = state.isStreaming;
+  
+  if (state.isStreaming) {
+    dom.chatLockState.textContent = 'Streaming response...';
+  } else if (hasApiKey) {
+    dom.chatLockState.textContent = 'Ready to chat privately';
+  } else {
+    dom.chatLockState.textContent = 'Set API key to start chatting';
+  }
 }
 
 function autoResizeTextarea() {
@@ -268,10 +277,12 @@ async function createNewChat() {
   await ensureConversation();
 }
 
+// DEPRECATED: No longer used with ChatEngine
 function activeSystemPrompt() {
   return 'You are Privex AI. Be concise for simple requests and detailed where needed.';
 }
 
+// DEPRECATED: No longer used with ChatEngine  
 function toMessageArray(messages) {
   return messages.map((m) => ({
     role: m.role,
@@ -281,13 +292,9 @@ function toMessageArray(messages) {
 
 async function sendMessage(text) {
   if (!text.trim() || state.isStreaming) return;
-  if (!boolSetting(LS.apiValidated, false)) {
-    dom.apiModal.classList.remove('hidden');
-    return;
-  }
-
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  
+  // Check if API key is present BEFORE allowing send
+  if (!ApiConfig.isApiKeyPresent()) {
     dom.apiModal.classList.remove('hidden');
     return;
   }
@@ -297,73 +304,77 @@ async function sendMessage(text) {
 
   const model = getSetting(LS.model, DEFAULTS.model);
 
+  // Create user message immediately
   const userMessage = await Storage.addMessage(state.activeConversationId, {
     role: 'user',
     content: text.trim(),
     timestamp: Date.now()
   });
 
+  // Create placeholder assistant message
   const assistantMessage = await Storage.addMessage(state.activeConversationId, {
     role: 'model',
     content: '',
     timestamp: Date.now()
   });
 
-  state.messages.push(userMessage, assistantMessage);
+  state.messages.push(userMessage);
+  state.messages.push(assistantMessage);
   renderMessages();
 
-  const messagePayload = toMessageArray(state.messages.slice(0, -1));
+  let fullAssistantText = '';
 
-  const finish = async (finalText) => {
-    state.isStreaming = false;
-    setLockedState();
-
-    if (typeof finalText === 'string') {
+  ChatEngine.sendMessage(
+    state.activeConversationId,
+    text.trim(),
+    // onChunk
+    (chunk) => {
+      fullAssistantText += chunk;
       const target = state.messages.find((m) => m.id === assistantMessage.id);
-      if (target) target.content = finalText;
-      await Storage.updateMessage(assistantMessage.id, { content: finalText, timestamp: Date.now() });
-    }
-
-    await ensureConversation();
-  };
-
-  const fail = async (status, message) => {
-    const target = state.messages.find((m) => m.id === assistantMessage.id);
-    if (target) target.content = `Error ${status || 0}: ${message || 'Request failed.'}`;
-    await Storage.updateMessage(assistantMessage.id, { content: target?.content || 'Error' });
-    await finish(target?.content || 'Error');
-  };
-
-  const config = {
-    model,
-    temperature: 0.6,
-    maxTokens: 2048
-  };
-
-  streamMessage(
-    apiKey,
-    messagePayload,
-    activeSystemPrompt(),
-    config,
-    async (_chunk, fullText) => {
-      const target = state.messages.find((m) => m.id === assistantMessage.id);
-      if (!target) return;
-      target.content = fullText;
+      if (target) {
+        target.content = fullAssistantText;
+      }
       renderMessages();
     },
-    async (fullText) => {
-      if (fullText == null) {
-        await fail(0, 'Streaming stopped.');
-        return;
+    // onDone
+    async (msg) => {
+      state.isStreaming = false;
+      setLockedState();
+      
+      // Update assistant message with final content
+      if (msg) {
+        const target = state.messages.find((m) => m.id === msg.id);
+        if (target) {
+          target.content = msg.content || '';
+        }
       }
-      await finish(fullText);
+      
+      renderMessages();
+      await ensureConversation();
     },
-    fail
+    // onError
+    async (status, message) => {
+      state.isStreaming = false;
+      setLockedState();
+      
+      const target = state.messages.find((m) => m.id === assistantMessage.id);
+      if (target) {
+        target.content = `Error ${status || 0}: ${message || 'Request failed.'}`;
+      }
+      
+      await Storage.updateMessage(assistantMessage.id, {
+        content: target?.content || 'Error'
+      });
+      
+      renderMessages();
+      await ensureConversation();
+    }
   );
 }
 
 async function regenerateFromMessage(aiMessageId) {
   if (state.isStreaming) return;
+  
   const index = state.messages.findIndex((m) => m.id === aiMessageId);
   if (index < 0 || state.messages[index].role !== 'model') return;
 
@@ -376,39 +387,47 @@ async function regenerateFromMessage(aiMessageId) {
   }
   if (userIndex < 0) return;
 
-  const apiKey = getApiKey();
-  const model = getSetting(LS.model, DEFAULTS.model);
+  if (!ApiConfig.isApiKeyPresent()) {
+    showStatus('API key required to regenerate', 'error');
+    return;
+  }
 
+  const model = getSetting(LS.model, DEFAULTS.model);
   state.isStreaming = true;
   setLockedState();
 
-  const context = toMessageArray(state.messages.slice(0, userIndex + 1));
   const target = state.messages[index];
-
-  streamMessage(
-    apiKey,
-    context,
-    activeSystemPrompt(),
-    {
-      model,
-      temperature: 0.6,
-      maxTokens: 2048
-    },
-    async (_chunk, fullText) => {
+  const userMessage = state.messages[userIndex];
+  
+  let fullText = '';
+  
+  ChatEngine.sendMessage(
+    state.activeConversationId,
+    userMessage.content,
+    // onChunk
+    (chunk) => {
+      fullText += chunk;
       target.content = fullText;
       renderMessages();
     },
-    async (fullText) => {
+    // onDone
+    async (msg) => {
       state.isStreaming = false;
       setLockedState();
-      if (typeof fullText === 'string') {
-        target.content = fullText;
-        await Storage.updateMessage(target.id, { content: fullText, timestamp: Date.now() });
-        renderMessages();
+      
+      if (msg && msg.content) {
+        target.content = msg.content;
+        await Storage.updateMessage(target.id, {
+          content: msg.content,
+          timestamp: Date.now()
+        });
       }
+      
+      renderMessages();
       await ensureConversation();
     },
-    async (_status, message) => {
+    // onError
+    async (status, message) => {
       state.isStreaming = false;
       setLockedState();
       target.content = `Regeneration failed: ${message}`;
@@ -433,22 +452,21 @@ async function runConnectionTest() {
   showStatus('Testing connection...', '');
   dom.testConnectionBtn.disabled = true;
 
-  const result = await testConnection(key, model);
+  const result = await ApiClient.testConnection(key, model);
 
   dom.testConnectionBtn.disabled = false;
 
   if (result.ok) {
-    localStorage.setItem(LS.apiValidated, 'true');
-    showStatus('Connection successful. Chat unlocked.', 'success');
+    showStatus('Connection successful. Chat ready.', 'success');
     setLockedState();
     setTimeout(() => dom.apiModal.classList.add('hidden'), 500);
   } else {
-    localStorage.setItem(LS.apiValidated, 'false');
     showStatus(result.message || 'Connection failed.', 'error');
     setLockedState();
   }
 }
 
+// DEPRECATED: Use ExportUtils instead
 function downloadText(filename, text) {
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -460,9 +478,17 @@ function downloadText(filename, text) {
 }
 
 async function exportData() {
-  const json = await Storage.exportAll();
-  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  downloadText(`privex-export-${stamp}.json`, json);
+  // Build full conversation data with messages
+  const conversations = await Storage.getAllConversations();
+  const archivedConversations = await Storage.getArchivedConversations();
+  const allConversations = [...conversations, ...archivedConversations];
+  
+  // Attach messages to each conversation
+  for (const conv of allConversations) {
+    conv.messages = await Storage.getMessages(conv.id);
+  }
+  
+  ExportUtils.exportAllConversationsAsJSON(allConversations);
 }
 
 async function clearAllData() {
@@ -634,8 +660,7 @@ function bindUIEvents() {
   dom.exportBtn.addEventListener('click', exportData);
 
   dom.clearApiKeyBtn.addEventListener('click', () => {
-    localStorage.removeItem(LS.apiKey);
-    localStorage.setItem(LS.apiValidated, 'false');
+    ApiConfig.clearApiKey();
     dom.apiKeyInput.value = '';
     showStatus('Local key cleared.', '');
     setLockedState();
@@ -698,14 +723,21 @@ async function init() {
   await Storage.init();
   await ensureConversation();
 
-  if (!boolSetting(LS.onboardingSeen, false)) {
-    dom.onboardingOverlay.classList.remove('hidden');
+  // REMOVED: Forced onboarding overlay
+  // REMOVED: Forced API modal on startup
+  // Users can access API setup via Settings or API panel button
+  dom.onboardingOverlay.classList.add('hidden');
+  
+  // Auto-show API modal only if NO API key is present AND user has not set one yet
+  // (on first time setup, offer to set API key)
+  const hasSeenSetup = localStorage.getItem('privexai_setup_seen');
+  if (!key && !hasSeenSetup) {
+    localStorage.setItem('privexai_setup_seen', 'true');
+    setTimeout(() => {
+      dom.apiModal.classList.remove('hidden');
+    }, 800);
   } else {
-    dom.onboardingOverlay.classList.add('hidden');
-  }
-
-  if (!boolSetting(LS.apiValidated, false)) {
-    dom.apiModal.classList.remove('hidden');
+    dom.apiModal.classList.add('hidden');
   }
 
   setLockedState();
