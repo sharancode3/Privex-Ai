@@ -1,4 +1,4 @@
-const CACHE_NAME = 'privex-ai-v3';
+const CACHE_NAME = 'privex-ai-v4';
 
 const APP_SHELL = [
   './',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(() => caches.match('./offline.html'))
