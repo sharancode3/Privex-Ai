@@ -32,7 +32,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-192.png">
 </head>
 <body>
-  <div class="app-shell">
+  <div id="app">
     <aside id="sidebar" class="sidebar" aria-label="Sidebar">
       <div class="sidebar-top">
         <div class="brand-header">
@@ -97,8 +97,8 @@
 
     <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-    <main class="chat-main" aria-label="Chat">
-      <header class="topbar">
+    <main id="main" aria-label="Chat">
+      <header id="topbar">
         <div class="topbar-left">
           <button id="menuBtn" class="icon-btn" type="button" aria-label="Toggle menu">
             <svg class="icon" width="20" height="20" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -110,15 +110,35 @@
           <button id="activeTitle" class="title-btn" type="button" aria-label="Conversation title">New Chat</button>
         </div>
         <div class="topbar-right">
-          <button id="installBtn" class="btn btn-ghost hidden" type="button">Install</button>
-          <button id="settingsBtn" class="btn btn-ghost" type="button">Settings</button>
+          <button id="installBtn" class="btn btn-icon hidden" type="button" aria-label="Install" title="Install">
+            <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 2v7"></path>
+              <path d="M5 6l3 3 3-3"></path>
+              <path d="M3 13h10"></path>
+            </svg>
+            <span class="sr-only">Install</span>
+          </button>
+          <button id="settingsBtn" class="btn btn-icon" type="button" aria-label="Settings" title="Settings">
+            <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="2.5"></circle>
+              <path d="M8 1.8v1.6"></path>
+              <path d="M8 12.6v1.6"></path>
+              <path d="M1.8 8h1.6"></path>
+              <path d="M12.6 8h1.6"></path>
+              <path d="M3.2 3.2l1.1 1.1"></path>
+              <path d="M11.7 11.7l1.1 1.1"></path>
+              <path d="M12.8 3.2l-1.1 1.1"></path>
+              <path d="M4.3 11.7l-1.1 1.1"></path>
+            </svg>
+            <span class="sr-only">Settings</span>
+          </button>
         </div>
       </header>
 
-      <section id="messages" class="messages" aria-live="polite"></section>
+      <div id="messages" aria-live="polite"></div>
 
-      <footer class="composer-wrap" aria-label="Message composer">
-        <div class="composer-inner">
+      <div id="input-area" aria-label="Message composer">
+        <div class="input-inner">
           <div class="composer">
             <textarea id="messageInput" rows="1" placeholder="Message Privex AI..." maxlength="32000"></textarea>
             <button id="sendBtn" class="send-btn" type="button" aria-label="Send">
@@ -133,7 +153,7 @@
             <span class="composer-shortcut">⌘ Enter to send</span>
           </div>
         </div>
-      </footer>
+      </div>
     </main>
   </div>
 

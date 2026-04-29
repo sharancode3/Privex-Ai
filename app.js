@@ -139,40 +139,19 @@ function renderMessages() {
   if (!state.messages.length) {
     const hasApiKey = ApiConfig.isApiKeyAvailable();
     dom.messages.innerHTML = `
-      <div class="message-stack">
-        <div class="welcome">
-          <div class="welcome-inner">
-            <div class="welcome-mark" aria-hidden="true">
-              <svg width="64" height="64" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M10 17V7h4a3 3 0 0 1 0 6h-4"></path>
-              </svg>
-            </div>
-            <div class="welcome-title">Privex AI</div>
-            <div class="welcome-sub">${hasApiKey ? 'Your private AI workspace. Start a conversation when you’re ready.' : 'Your private AI workspace. Add an API key in Settings to begin.'}</div>
-            <div class="welcome-pills" aria-label="Capabilities">
-              <span class="welcome-pill">
-                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M8 1.5l6 2.5v5c0 3.5-2.5 5.5-6 6.8C4.5 14.5 2 12.5 2 9V4l6-2.5z"></path>
-                </svg>
-                Local only
-              </span>
-              <span class="welcome-pill">
-                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M11 2L6 9h3l-4 5 5-7H7l4-5z"></path>
-                </svg>
-                Streaming
-              </span>
-              <span class="welcome-pill">
-                <svg class="icon" width="12" height="12" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="6" cy="8" r="3"></circle>
-                  <path d="M9 8h5"></path>
-                  <path d="M12 8v2"></path>
-                </svg>
-                BYOK
-              </span>
-            </div>
-          </div>
+      <div id="welcome-state">
+        <div class="welcome-mark" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 28 28" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="14" cy="14" r="12"></circle>
+            <path d="M12 19V9h4a3 3 0 0 1 0 6h-4"></path>
+          </svg>
+        </div>
+        <div class="welcome-title">Privex AI</div>
+        <div class="welcome-sub">${hasApiKey ? 'Start a conversation when you’re ready.' : 'Add an API key in Settings to begin'}</div>
+        <div class="welcome-pills" aria-label="Capabilities">
+          <span class="welcome-pill">Local only</span>
+          <span class="welcome-pill">Streaming</span>
+          <span class="welcome-pill">BYOK</span>
         </div>
       </div>
     `;
@@ -226,17 +205,33 @@ function renderMessages() {
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
     const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn btn-ghost';
-    copyBtn.textContent = 'Copy';
+    copyBtn.className = 'btn btn-icon';
     copyBtn.type = 'button';
+    copyBtn.setAttribute('aria-label', 'Copy');
+    copyBtn.title = 'Copy';
+    copyBtn.innerHTML = `
+      <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="5" width="9" height="9" rx="1.5"></rect>
+        <rect x="2" y="2" width="9" height="9" rx="1.5"></rect>
+      </svg>
+      <span class="sr-only">Copy</span>
+    `;
     copyBtn.addEventListener('click', () => navigator.clipboard.writeText(msg.content || ''));
     actions.appendChild(copyBtn);
 
     if (!isUser) {
       const regenBtn = document.createElement('button');
-      regenBtn.className = 'btn btn-ghost';
-      regenBtn.textContent = 'Regenerate';
+      regenBtn.className = 'btn btn-icon';
       regenBtn.type = 'button';
+      regenBtn.setAttribute('aria-label', 'Regenerate');
+      regenBtn.title = 'Regenerate';
+      regenBtn.innerHTML = `
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M13 8a5 5 0 1 1-1.4-3.5"></path>
+          <path d="M13 3.5v4h-4"></path>
+        </svg>
+        <span class="sr-only">Regenerate</span>
+      `;
       regenBtn.addEventListener('click', () => regenerateFromMessage(msg.id));
       actions.appendChild(regenBtn);
     }
@@ -379,7 +374,7 @@ async function createNewChat() {
 }
 
 async function addInlineApiKeyNotice() {
-  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](/settings/)';
+  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](./settings/index.html)';
   const notice = await Storage.addMessage(state.activeConversationId, {
     role: 'model',
     content,
@@ -669,11 +664,11 @@ function bindUIEvents() {
     await ensureConversation();
   });
   dom.settingsBtn.addEventListener('click', () => {
-    window.location.href = './settings/';
+    window.location.href = './settings/index.html';
   });
 
   dom.sidebarSettingsBtn.addEventListener('click', () => {
-    window.location.href = './settings/';
+    window.location.href = './settings/index.html';
   });
 
   dom.exportBtn.addEventListener('click', exportData);
