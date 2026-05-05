@@ -12,7 +12,7 @@ Privacy-first AI chat in pure vanilla HTML/CSS/JS.
 
 ## Project Structure
 
-- `dashboard.html` - App shell and UI markup.
+- `index.html` - App shell and UI markup.
 - `style.css` - Styling, responsive layout, animations.
 - `app.js` - Main runtime controller and event wiring.
 - `gemini.js` - OpenAI GPT API client (streaming and non-streaming).
@@ -44,7 +44,7 @@ Your key is read from `config.js` and sent only to OpenAI API endpoints.
 
 ## API Key Safety
 
-- Never hardcode any OpenAI key in `app.js`, `gemini.js`, `dashboard.html`, or any tracked source file.
+- Never hardcode any OpenAI key in `app.js`, `gemini.js`, `index.html`, or any tracked source file.
 - `config.js` is git-ignored by default in this project.
 - If a key is committed to GitHub, Google scanners can invalidate it quickly.
 
@@ -52,7 +52,7 @@ Serverless proxy option (recommended for public deployments): use Netlify/Vercel
 
 ## Run Locally
 
-Because this app uses ES modules, use a simple static server (or GitHub Pages) instead of opening `dashboard.html` directly from `file://`.
+Because this app uses ES modules, use a simple static server (or GitHub Pages) instead of opening `index.html` directly from `file://`.
 
 Examples:
 

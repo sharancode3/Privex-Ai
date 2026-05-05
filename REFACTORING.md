@@ -248,7 +248,7 @@ The refactored system handles all edge cases:
 ├── storage.js               ← IndexedDB + encryption (unchanged)
 ├── crypto.js                ← Encryption at rest (unchanged)
 ├── gemini.js                ← Legacy (still available, not used)
-├── dashboard.html           ← UI markup (renamed from index.html)
+├── index.html               ← UI markup (unchanged)
 ├── style.css                ← Styling (unchanged)
 ├── themes.js                ← Theme utilities (unchanged)
 └── [other PWA files]

@@ -380,7 +380,7 @@ async function createNewChat() {
 }
 
 async function addInlineApiKeyNotice() {
-  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](./settings/settings.html)';
+  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](./settings/index.html)';
   const notice = await Storage.addMessage(state.activeConversationId, {
     role: 'model',
     content,
@@ -689,11 +689,11 @@ function bindUIEvents() {
     await ensureConversation();
   });
   dom.settingsBtn.addEventListener('click', () => {
-    window.location.href = './settings/settings.html';
+    window.location.href = './settings/index.html';
   });
 
-  dom.settingsBtn?.addEventListener('click', () => {
-    window.location.href = './settings/settings.html';
+  dom.sidebarSettingsBtn.addEventListener('click', () => {
+    window.location.href = './settings/index.html';
   });
 
   dom.exportBtn.addEventListener('click', exportData);
