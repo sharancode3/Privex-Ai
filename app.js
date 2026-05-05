@@ -668,15 +668,22 @@ function bindUIEvents() {
   dom.messageInput.addEventListener('input', autoResizeTextarea);
   dom.messageInput.addEventListener('input', syncSendButtonState);
 
-  dom.menuBtn.addEventListener('click', () => {
-    state.sidebarOpen = !state.sidebarOpen;
-    dom.sidebar.classList.toggle('open', state.sidebarOpen);
-    dom.sidebarBackdrop.classList.toggle('is-active', state.sidebarOpen);
-  });
+  // Mobile menu button toggle
+  if (dom.menuBtn) {
+    dom.menuBtn.addEventListener('click', () => {
+      state.sidebarOpen = !state.sidebarOpen;
+      dom.sidebar.classList.toggle('open', state.sidebarOpen);
+      dom.sidebarBackdrop.classList.toggle('is-active', state.sidebarOpen);
+    });
+  }
 
   dom.sidebarBackdrop.addEventListener('click', () => {
-    dom.sidebar.classList.remove('open');
-    dom.sidebarBackdrop.classList.remove('is-active');
+    if (dom.sidebar) {
+      dom.sidebar.classList.remove('open');
+    }
+    if (dom.sidebarBackdrop) {
+      dom.sidebarBackdrop.classList.remove('is-active');
+    }
     state.sidebarOpen = false;
   });
 
@@ -729,12 +736,14 @@ function bindUIEvents() {
 function cacheDom() {
   [
     'sidebar', 'newChatBtn', 'chatList', 'sidebarSettingsBtn', 'exportBtn',
-    'activeTitle', 'menuBtn', 'installBtn', 'settingsBtn',
+    'activeTitle', 'installBtn', 'settingsBtn',
     'messages', 'messageInput', 'sendBtn', 'chatLockState',
     'offlineBanner', 'sidebarBackdrop'
   ].forEach((id) => {
     dom[id] = $(id);
   });
+  // Mobile menu button (optional)
+  dom.menuBtn = $('menuBtn');
 }
 
 async function init() {

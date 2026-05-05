@@ -205,6 +205,10 @@ button, [role="button"] {
 
 #topbar-actions { display: flex; gap: 8px; }
 
+.mobile-menu-btn {
+  display: none;
+}
+
 #install-btn, #settings-btn-top {
   height: 32px;
   padding: 0 14px;
@@ -636,4 +640,341 @@ button, [role="button"] {
   border-radius: 16px;
   overflow-y: auto;
   animation: fadeUp 250ms cubic-bezier(0.34,1.2,0.64,1) both;
+}
+
+/* ───────────────────────────────────────── */
+/* ── MOBILE RESPONSIVENESS (768px & DOWN) */
+/* ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Root mobile adjustments */
+  :root {
+    --chat-max-width: 100%;
+  }
+
+  /* Layout: Stack vertically on mobile */
+  #app {
+    flex-direction: column;
+  }
+
+  /* Sidebar: Hidden by default, overlay on mobile */
+  #sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 300ms ease;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5);
+  }
+
+  #sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main takes full width on mobile */
+  #main {
+    height: 100vh;
+    width: 100%;
+  }
+
+  /* Mobile menu button */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    color: #f5f5f5;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 8px;
+    transition: background 120ms;
+  }
+
+  .mobile-menu-btn:active {
+    background: #1f1f1f;
+  }
+
+  /* Topbar adjustments for mobile */
+  #topbar {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  #activeTitle {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+  }
+
+  #topbar-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  #installBtn, #sidebarSettingsBtn {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  /* Messages container adjustments */
+  #messages {
+    padding: 12px;
+    max-width: 100%;
+  }
+
+  /* Bubble adjustments for mobile */
+  .msg {
+    max-width: 100%;
+  }
+
+  .msg.user .bubble {
+    max-width: 85%;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .msg.ai .bubble {
+    max-width: 100%;
+  }
+
+  .message-content {
+    font-size: var(--chat-font-size);
+  }
+
+  /* Input bar mobile adjustments */
+  #input-bar {
+    padding: 8px 12px 12px;
+    gap: 6px;
+  }
+
+  #input-wrap {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  #messageInput {
+    min-height: 44px;
+    padding: 10px 44px 10px 14px;
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+    border-radius: 10px;
+  }
+
+  #sendBtn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  #chatLockState {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  /* Welcome screen mobile */
+  #welcome {
+    padding: 20px;
+  }
+
+  #welcome-title {
+    font-size: 20px;
+  }
+
+  #welcome-pills {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .pill {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  /* Backdrop visible on mobile */
+  #sidebarBackdrop {
+    z-index: 999;
+  }
+}
+
+/* ───────────────────────────────────────── */
+/* ── TABLET (769px to 1024px) */
+/* ───────────────────────────────────────── */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --chat-max-width: 600px;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+}
+
+/* ───────────────────────────────────────── */
+/* ── SMALL MOBILE (480px & DOWN) */
+/* ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  /* Extra tight on small screens */
+  body {
+    font-size: 13px;
+  }
+
+  #sidebar {
+    width: 240px;
+  }
+
+  #logo-mark {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  #app-name {
+    font-size: 13px;
+  }
+
+  #topbar {
+    height: 48px;
+    padding: 0 8px;
+    gap: 4px;
+  }
+
+  #activeTitle {
+    font-size: 13px;
+  }
+
+  #messages {
+    padding: 8px;
+  }
+
+  .msg.user .bubble {
+    max-width: 90%;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .msg.ai .bubble {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  #messageInput {
+    min-height: 40px;
+    padding: 8px 40px 8px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+
+  #sendBtn {
+    width: 28px;
+    height: 28px;
+    right: 6px;
+    bottom: 6px;
+    font-size: 14px;
+  }
+
+  #input-bar {
+    padding: 6px 8px 10px;
+  }
+
+  #newChatBtn {
+    height: 32px;
+    font-size: 12px;
+    margin: 0 8px 6px;
+  }
+
+  #recent-label {
+    font-size: 9px;
+    padding: 6px 12px 3px;
+  }
+
+  #sidebar-header {
+    height: 48px;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .conv-item {
+    font-size: 12px;
+    padding: 6px 10px;
+    margin: 1px 6px;
+  }
+}
+
+/* ───────────────────────────────────────── */
+/* ── LANDSCAPE MOBILE (height < 600px) */
+/* ───────────────────────────────────────── */
+
+@media (max-height: 600px) and (orientation: landscape) {
+  #topbar {
+    height: 44px;
+    padding: 0 12px;
+  }
+
+  #messages {
+    padding: 8px;
+  }
+
+  #input-bar {
+    padding: 6px 12px;
+  }
+
+  #messageInput {
+    min-height: 36px;
+    max-height: 120px;
+  }
+
+  .msg.user .bubble,
+  .msg.ai .bubble {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  #welcome {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  #welcome-title {
+    font-size: 16px;
+  }
+
+  #welcome-logo {
+    font-size: 32px;
+  }
+}
+
+/* ───────────────────────────────────────── */
+/* ── ULTRA-WIDE (1600px+) */
+/* ───────────────────────────────────────── */
+
+@media (min-width: 1600px) {
+  :root {
+    --chat-max-width: 900px;
+  }
+
+  #sidebar {
+    width: 300px;
+    min-width: 300px;
+  }
+
+  #messages {
+    padding: 32px;
+  }
 }
