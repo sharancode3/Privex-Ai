@@ -198,7 +198,7 @@ export function stopStreaming() {
 /**
  * Test connection to API provider
  */
-export async function testConnection(apiKey, model = DEFAULT_MODEL) {
+export async function testConnection(apiKey, model = DEFAULT_MODEL, providerOverride = '') {
   if (!apiKey?.trim()) {
     return {
       ok: false,
@@ -208,7 +208,8 @@ export async function testConnection(apiKey, model = DEFAULT_MODEL) {
   }
   
   try {
-    const provider = detectProvider(apiKey);
+    // Use provided provider or auto-detect
+    const provider = providerOverride?.trim() || detectProvider(apiKey);
     const endpoint = resolveEndpoint(provider, { model });
     const body = provider === 'anthropic'
       ? {

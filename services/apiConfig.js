@@ -156,25 +156,10 @@ export function getConfig() {
     apiKey: getApiKey(),
     isPresent: isApiKeyPresent(),
     provider: detectProvider(getApiKey()),
-    preference: getProviderPreference(),
+    preference: getUserProviderPreference(),
     config: window.PRIVEX_CONFIG || {}
   };
 }
-
-/**
- * Export all API config functions for consistent access
- */
-export const ApiConfig = {
-  setApiKey,
-  getApiKey,
-  isApiKeyPresent,
-  isApiKeyAvailable,
-  clearApiKey,
-  getProviderPreference,
-  setProviderPreference,
-  detectProvider,
-  getConfig
-};
 
 /**
  * Provider configurations
@@ -226,6 +211,9 @@ export const PROVIDERS = {
   }
 };
 
+/**
+ * Export all API config functions for consistent access
+ */
 export const ApiConfig = {
   setApiKey,
   getApiKey,
@@ -237,3 +225,5 @@ export const ApiConfig = {
   detectProvider,
   getConfig
 };
+
+export default ApiConfig;
