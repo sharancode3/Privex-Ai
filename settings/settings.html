@@ -37,7 +37,7 @@
           <h1>Settings</h1>
           <p>Manage your local preferences and API key.</p>
         </div>
-        <a class="icon-btn" href="../index.html" aria-label="Close">
+        <a class="icon-btn" href="../dashboard.html" aria-label="Close">
           <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 4l8 8"></path>
             <path d="M12 4l-8 8"></path>
@@ -68,11 +68,34 @@
           <section class="settings-panel is-active" data-panel="keys">
             <div class="settings-row">
               <label for="apiKeyInput">API Key</label>
-              <input id="apiKeyInput" type="password" placeholder="Paste your API key" autocomplete="off">
+              <input id="apiKeyInput" type="text" placeholder="Paste any API key from any provider" autocomplete="off">
+              <div class="provider-hint">OpenAI, Anthropic, Groq, Gemini, xAI, OpenRouter, HuggingFace, Perplexity, and more</div>
             </div>
+
+            <div class="settings-row">
+              <label for="providerSelect">Provider (optional — auto-detected if blank)</label>
+              <select id="providerSelect">
+                <option value="">Auto-detect</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="groq">Groq</option>
+                <option value="gemini">Gemini</option>
+                <option value="xai">xAI (Grok)</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="huggingface">HuggingFace</option>
+                <option value="perplexity">Perplexity</option>
+                <option value="custom">Custom / Other</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <label for="modelInput">Model (optional)</label>
+              <input id="modelInput" type="text" placeholder="e.g. gpt-4o-mini, claude-3-haiku, llama-2-70b" autocomplete="off">
+            </div>
+
             <div class="settings-actions">
-              <button id="saveApiKeyBtn" class="btn btn-ghost" type="button">Save Key</button>
-              <button id="testConnectionBtn" class="btn btn-primary" type="button">Test</button>
+              <button id="saveApiKeyBtn" class="btn btn-ghost" type="button">Save</button>
+              <button id="testConnectionBtn" class="btn btn-primary" type="button">Test Connection</button>
               <button id="clearApiKeyBtn" class="btn btn-ghost" type="button">Clear</button>
             </div>
             <p id="apiStatus" class="status-text">Not set</p>

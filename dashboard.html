@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-font="md" data-width="normal">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Privex AI is a privacy-first local AI chat testing platform.">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Privex AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    (() => {
+      try {
+        const themeRaw = localStorage.getItem('privex-theme') || localStorage.getItem('privexai_theme') || 'system';
+        const font = localStorage.getItem('privexai_font_size') || 'md';
+        const width = localStorage.getItem('privexai_chat_width') || 'normal';
+        const resolved = themeRaw === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : themeRaw;
+        document.documentElement.dataset.theme = resolved;
+        document.documentElement.dataset.font = font;
+        document.documentElement.dataset.width = width;
+      } catch {
+        // no-op
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-192.png">
+  <script src="config.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <div id="offlineBanner" class="hidden"></div>
+    <div id="sidebarBackdrop"></div>
+
+    <!-- SIDEBAR: exactly ONE -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <div id="logo-mark">P</div>
+        <div>
+          <div id="app-name">Privex AI</div>
+          <div id="app-sub">Private AI</div>
+        </div>
+      </div>
+      <div id="status-row">
+        <span id="status-dot"></span>
+        <span>Local only</span>
+      </div>
+      <button id="newChatBtn">+ New chat</button>
+      <div id="recent-label">Recent</div>
+      <div id="chatList">
+        <!-- JS populates conversation items here -->
+      </div>
+      <div id="sidebar-footer">
+        <div id="settingsBtn">Settings</div>
+        <div id="exportBtn">Export Chats</div>
+      </div>
+    </aside>
+
+    <!-- MAIN: exactly ONE -->
+    <main id="main">
+      <header id="topbar">
+        <span id="activeTitle">New Conversation</span>
+        <div id="topbar-actions">
+          <button id="installBtn">Install</button>
+          <button id="sidebarSettingsBtn">Settings</button>
+        </div>
+      </header>
+
+      <div id="messages">
+        <!-- Welcome state: shown when no messages -->
+        <div id="welcome">
+          <div id="welcome-logo">P</div>
+          <div id="welcome-title">Privex AI</div>
+          <div id="welcome-sub">Add an API key in Settings to begin</div>
+          <div id="welcome-pills">
+            <span class="pill">Local only</span>
+            <span class="pill">Streaming</span>
+            <span class="pill">BYOK</span>
+          </div>
+        </div>
+        <!-- JS renders chat messages here -->
+      </div>
+
+      <div id="input-bar">
+        <div id="input-wrap">
+          <textarea id="messageInput" placeholder="Message Privex AI..." rows="1"></textarea>
+          <button id="sendBtn">↑</button>
+        </div>
+        <div id="chatLockState">Add API key in Settings to chat</div>
+      </div>
+    </main>
+
+  </div>
+</body>
+</html>

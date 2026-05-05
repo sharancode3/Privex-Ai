@@ -34,7 +34,7 @@
       "name": "New Chat",
       "short_name": "New Chat",
       "description": "Open Privex AI and start a new private conversation",
-      "url": "./index.html"
+      "url": "./dashboard.html"
     }
   ]
 }

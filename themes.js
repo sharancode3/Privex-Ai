@@ -1,5 +1,8 @@
 const ACCENT_PRESETS = ['#ffffff', '#d4d4d4', '#9a9a9a', '#404040', '#0a0a0a'];
 
+const FONT_MAP = { sm: '13px', md: '15px', lg: '17px' };
+const WIDTH_MAP = { compact: '580px', normal: '720px', wide: '900px' };
+
 export function hexToRgba(hex, alpha = 1) {
   const cleaned = (hex || '').replace('#', '');
   const normalized = cleaned.length === 3
@@ -56,10 +59,14 @@ export function applyTheme(theme) {
 }
 
 export function applyFontSize(font) {
+  const size = FONT_MAP[font] || FONT_MAP.md;
+  document.documentElement.style.setProperty('--chat-font-size', size);
   document.documentElement.dataset.font = font || 'md';
 }
 
 export function applyWidth(width) {
+  const maxWidth = WIDTH_MAP[width] || WIDTH_MAP.normal;
+  document.documentElement.style.setProperty('--chat-max-width', maxWidth);
   document.documentElement.dataset.width = width || 'normal';
 }
 

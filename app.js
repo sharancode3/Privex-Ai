@@ -74,7 +74,9 @@ function migrateThemeKeyIfNeeded(theme) {
 function syncSendButtonState() {
   const hasApiKey = ApiConfig.isApiKeyAvailable();
   const hasText = !!(dom.messageInput.value || '').trim();
-  dom.sendBtn.disabled = state.isStreaming || !hasApiKey || !hasText;
+  const isActive = !state.isStreaming && hasApiKey && hasText;
+  dom.sendBtn.disabled = !isActive;
+  dom.sendBtn.classList.toggle('active', isActive);
 }
 
 function boolSetting(key, fallback = false) {
@@ -87,14 +89,12 @@ function setLockedState() {
   const hasApiKey = ApiConfig.isApiKeyAvailable();
   dom.messageInput.disabled = state.isStreaming;
   document.documentElement.classList.toggle('is-streaming', state.isStreaming);
-  dom.chatLockState.classList.toggle('is-warn', !hasApiKey);
-  
   if (state.isStreaming) {
     dom.chatLockState.textContent = 'Streaming response...';
   } else if (hasApiKey) {
     dom.chatLockState.textContent = 'Privex AI uses your API key directly. No data leaves your device.';
   } else {
-    dom.chatLockState.textContent = 'Add an API key in Settings to start chatting';
+    dom.chatLockState.textContent = 'Add API key in Settings to chat';
   }
 
   syncSendButtonState();
@@ -204,36 +204,42 @@ function renderMessages() {
 
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
+    
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn btn-icon';
     copyBtn.type = 'button';
     copyBtn.setAttribute('aria-label', 'Copy');
     copyBtn.title = 'Copy';
     copyBtn.innerHTML = `
-      <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="5" y="5" width="9" height="9" rx="1.5"></rect>
-        <rect x="2" y="2" width="9" height="9" rx="1.5"></rect>
-      </svg>
-      <span class="sr-only">Copy</span>
+      <svg class="icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="9" height="10" rx="1.5"/><path d="M3 11V3a1 1 0 011-1h7"/></svg>
     `;
-    copyBtn.addEventListener('click', () => navigator.clipboard.writeText(msg.content || ''));
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(msg.content || '');
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<span style="font-size:11px">Copied!</span>';
+        setTimeout(() => {
+          copyBtn.innerHTML = originalText;
+        }, 1500);
+      } catch (e) {
+        console.error('Copy failed:', e);
+      }
+    });
     actions.appendChild(copyBtn);
 
     if (!isUser) {
-      const regenBtn = document.createElement('button');
-      regenBtn.className = 'btn btn-icon';
-      regenBtn.type = 'button';
-      regenBtn.setAttribute('aria-label', 'Regenerate');
-      regenBtn.title = 'Regenerate';
-      regenBtn.innerHTML = `
-        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M13 8a5 5 0 1 1-1.4-3.5"></path>
-          <path d="M13 3.5v4h-4"></path>
-        </svg>
-        <span class="sr-only">Regenerate</span>
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-icon';
+      editBtn.type = 'button';
+      editBtn.setAttribute('aria-label', 'Edit');
+      editBtn.title = 'Edit';
+      editBtn.innerHTML = `
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5L5 13.5H2.5V11z"/><path d="M9.5 4l2.5 2.5"/></svg>
       `;
-      regenBtn.addEventListener('click', () => regenerateFromMessage(msg.id));
-      actions.appendChild(regenBtn);
+      editBtn.addEventListener('click', () => {
+        console.log('Edit message:', msg.id);
+      });
+      actions.appendChild(editBtn);
     }
 
     bubble.appendChild(actions);
@@ -334,7 +340,7 @@ function renderConversationList() {
       if (action === 'export') {
         const conversation = await Storage.getConversation(conv.id);
         const messages = await Storage.getMessages(conv.id);
-        ExportUtils.exportConversationAsJSON({ ...conversation, messages });
+        ExportUtils.exportChatAsPDF(conversation.title || 'Chat', messages);
       }
     });
 
@@ -374,7 +380,7 @@ async function createNewChat() {
 }
 
 async function addInlineApiKeyNotice() {
-  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](./settings/index.html)';
+  const content = 'API key not configured. Please add your API key in Settings to continue.\n\n[Go to Settings](./settings/settings.html)';
   const notice = await Storage.addMessage(state.activeConversationId, {
     role: 'model',
     content,
@@ -542,7 +548,26 @@ async function exportData() {
     conv.messages = await Storage.getMessages(conv.id);
   }
   
-  ExportUtils.exportAllConversationsAsJSON(allConversations);
+  // Combine all conversations into one PDF
+  if (allConversations.length === 0) {
+    alert('No conversations to export');
+    return;
+  }
+
+  // Flatten all messages with conversation context
+  const allMessages = [];
+  for (const conv of allConversations) {
+    if (conv.messages && conv.messages.length > 0) {
+      allMessages.push({
+        role: 'model',
+        content: `\n\n--- ${conv.title || 'Chat'} ---\n`,
+        timestamp: conv.createdAt || Date.now()
+      });
+      allMessages.push(...conv.messages);
+    }
+  }
+  
+  ExportUtils.exportChatAsPDF('All Conversations', allMessages);
 }
 
 async function clearAllData() {
@@ -664,11 +689,11 @@ function bindUIEvents() {
     await ensureConversation();
   });
   dom.settingsBtn.addEventListener('click', () => {
-    window.location.href = './settings/index.html';
+    window.location.href = './settings/settings.html';
   });
 
-  dom.sidebarSettingsBtn.addEventListener('click', () => {
-    window.location.href = './settings/index.html';
+  dom.settingsBtn?.addEventListener('click', () => {
+    window.location.href = './settings/settings.html';
   });
 
   dom.exportBtn.addEventListener('click', exportData);

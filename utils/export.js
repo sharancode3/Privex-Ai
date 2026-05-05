@@ -2,26 +2,63 @@
  * Export Utilities
  * 
  * Client-side only export functionality for chat data.
+ * - PDF export with WhatsApp-style formatting
  * - No server calls, pure client-side file generation
- * - JSON: Full conversation data
- * - TXT: Human-readable text format
- * - CSV: Spreadsheet-compatible format
  */
 
 /**
- * Trigger browser file download
+ * Export chat as PDF (WhatsApp style)
  */
-function downloadFile(content, filename, mimeType = 'text/plain') {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+export function exportChatAsPDF(conversationTitle, messages) {
+  if (!messages || !Array.isArray(messages)) {
+    console.error('No messages provided');
+    return;
+  }
+
+  const chatHTML = messages.map(msg => {
+    const isUser = msg.role === 'user';
+    const name = isUser ? 'You' : 'Privex AI';
+    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const align = isUser ? 'flex-end' : 'flex-start';
+    const bg = isUser ? '#1a1a1a' : '#111111';
+    const radius = isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px';
+    return `<div style="display:flex;flex-direction:column;align-items:${align};margin-bottom:12px;">
+      <div style="font-size:11px;color:#888;margin-bottom:3px;padding:0 4px;">${name}</div>
+      <div style="background:${bg};color:#f5f5f5;padding:10px 14px;border-radius:${radius};max-width:72%;font-size:14px;line-height:1.6;word-wrap:break-word;">${escapeHtml(msg.content || '')}</div>
+      <div style="font-size:10px;color:#555;margin-top:3px;padding:0 4px;">${time}</div>
+    </div>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${escapeHtml(conversationTitle)}</title>
+  <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#f5f5f5;padding:24px;max-width:700px;margin:0 auto;}
+  h2{font-size:16px;font-weight:500;color:#f5f5f5;margin-bottom:4px;}.meta{font-size:12px;color:#555;margin-bottom:24px;}
+  hr{border:none;border-top:1px solid #1f1f1f;margin:16px 0;}@media print{body{background:white;color:black;}.meta{color:#666;}hr{border-top-color:#ddd;}}</style>
+  </head><body><h2>${escapeHtml(conversationTitle)}</h2>
+  <div class="meta">Exported from Privex AI · ${new Date().toLocaleDateString()}</div>
+  <hr>${chatHTML}
+  <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();}<\/script>
+  </body></html>`);
+  win.document.close();
 }
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+/**
+ * Export utilities for backwards compatibility
+ */
+export const ExportUtils = {
+  exportChatAsPDF
+};
+
+export default ExportUtils;
 
 /**
  * Export entire conversation as JSON

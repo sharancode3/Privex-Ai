@@ -10,8 +10,8 @@
 
 const STORAGE_KEYS = {
   apiKey: 'privexai_api_key',
-  provider: 'privexai_provider',
-  modelOverride: 'privexai_model_override'
+  provider: 'privexai_provider_pref',
+  customModel: 'privexai_custom_model'
 };
 
 /**
@@ -77,10 +77,10 @@ export function clearApiKey() {
 }
 
 /**
- * Get provider preference (if any)
+ * Get user's provider preference (if set explicitly)
  * @returns {string} Provider name or empty string
  */
-export function getProviderPreference() {
+export function getUserProviderPreference() {
   try {
     return localStorage.getItem(STORAGE_KEYS.provider)?.trim() || '';
   } catch {
@@ -89,33 +89,62 @@ export function getProviderPreference() {
 }
 
 /**
- * Set provider preference
- * @param {string} provider - Provider name
+ * Get user's custom model (if set)
+ * @returns {string} Custom model name or empty string
  */
-export function setProviderPreference(provider) {
-  if (!provider || typeof provider !== 'string') return;
+export function getCustomModel() {
   try {
-    localStorage.setItem(STORAGE_KEYS.provider, provider.trim());
-  } catch (e) {
-    console.error('Failed to save provider preference:', e.message);
+    return localStorage.getItem(STORAGE_KEYS.customModel)?.trim() || '';
+  } catch {
+    return '';
   }
 }
 
 /**
- * Detect provider from API key format
+ * Detect provider from API key format (best effort)
  * @param {string} apiKey - API key
- * @returns {string} Provider name
+ * @returns {string} Provider name (defaults to 'openai' if unknown)
  */
 export function detectProvider(apiKey) {
   if (!apiKey) return 'openai';
   
-  const key = String(apiKey).toLowerCase();
-  if (key.startsWith('sk-ant-')) return 'anthropic';
-  if (key.startsWith('aiza')) return 'gemini';
-  if (key.startsWith('xai-')) return 'xai';
-  if (key.startsWith('hf_')) return 'huggingface';
+  const key = String(apiKey).trim();
   
-  return 'openai'; // default
+  // Anthropic
+  if (key.startsWith('sk-ant-')) return 'anthropic';
+  
+  // OpenAI (sk- followed by letters/numbers, usually 48+ chars)
+  if (key.startsWith('sk-') && key.length > 40 && !key.startsWith('sk-proj-')) return 'openai';
+  
+  // OpenAI Project (sk-proj-)
+  if (key.startsWith('sk-proj-')) return 'openai';
+  
+  // Groq (gsk_)
+  if (key.startsWith('gsk_')) return 'groq';
+  
+  // Google Gemini (AIza)
+  if (key.startsWith('AIza')) return 'gemini';
+  
+  // xAI Grok (xai-)
+  if (key.startsWith('xai-')) return 'xai';
+  
+  // OpenRouter (or-)
+  if (key.startsWith('or-')) return 'openrouter';
+  
+  // HuggingFace (hf_, hf.)
+  if (key.startsWith('hf_') || key.startsWith('hf.')) return 'huggingface';
+  
+  // Perplexity (pplx-)
+  if (key.startsWith('pplx-')) return 'perplexity';
+  
+  // Replicate (r8_)
+  if (key.startsWith('r8_')) return 'replicate';
+  
+  // Together AI (68eb437a...)
+  if (key.match(/^[a-f0-9]{32,}$/i)) return 'togetherai';
+  
+  // Default fallback
+  return 'openai';
 }
 
 /**
@@ -147,4 +176,64 @@ export const ApiConfig = {
   getConfig
 };
 
-export default ApiConfig;
+/**
+ * Provider configurations
+ */
+export const PROVIDERS = {
+  openai: {
+    url: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+    authHeader: (k) => `Bearer ${k}`
+  },
+  anthropic: {
+    url: 'https://api.anthropic.com/v1/messages',
+    model: 'claude-3-haiku-20240307',
+    authHeader: (k) => k,
+    extraHeaders: {
+      'anthropic-version': '2023-06-01',
+      'x-api-key': (k) => k
+    }
+  },
+  groq: {
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.1-8b-instant',
+    authHeader: (k) => `Bearer ${k}`
+  },
+  gemini: {
+    url: (k) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`,
+    model: 'gemini-1.5-flash',
+    authHeader: () => null
+  },
+  xai: {
+    url: 'https://api.x.ai/v1/chat/completions',
+    model: 'grok-beta',
+    authHeader: (k) => `Bearer ${k}`
+  },
+  openrouter: {
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'openai/gpt-4o-mini',
+    authHeader: (k) => `Bearer ${k}`
+  },
+  huggingface: {
+    url: 'https://api-inference.huggingface.co/models/',
+    model: 'meta-llama/Llama-2-7b-chat-hf',
+    authHeader: (k) => `Bearer ${k}`
+  },
+  perplexity: {
+    url: 'https://api.perplexity.ai/chat/completions',
+    model: 'pplx-7b-online',
+    authHeader: (k) => `Bearer ${k}`
+  }
+};
+
+export const ApiConfig = {
+  setApiKey,
+  getApiKey,
+  isApiKeyPresent,
+  isApiKeyAvailable,
+  clearApiKey,
+  getUserProviderPreference,
+  getCustomModel,
+  detectProvider,
+  getConfig
+};

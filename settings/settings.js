@@ -7,7 +7,9 @@ const LS = {
   theme: 'privexai_theme',
   font: 'privexai_font_size',
   width: 'privexai_chat_width',
-  showTimestamps: 'privexai_show_timestamps'
+  showTimestamps: 'privexai_show_timestamps',
+  provider: 'privexai_provider_pref',
+  customModel: 'privexai_custom_model'
 };
 
 const THEME_LS = {
@@ -24,6 +26,8 @@ const DEFAULTS = {
 
 const dom = {
   apiKeyInput: document.getElementById('apiKeyInput'),
+  providerSelect: document.getElementById('providerSelect'),
+  modelInput: document.getElementById('modelInput'),
   saveApiKeyBtn: document.getElementById('saveApiKeyBtn'),
   testConnectionBtn: document.getElementById('testConnectionBtn'),
   clearApiKeyBtn: document.getElementById('clearApiKeyBtn'),
@@ -83,7 +87,13 @@ function setStatus(text, type = '') {
 
 function loadApiKey() {
   const key = ApiConfig.getApiKey();
+  const provider = getSetting(LS.provider, '');
+  const customModel = getSetting(LS.customModel, '');
+  
   dom.apiKeyInput.value = key || '';
+  dom.providerSelect.value = provider;
+  dom.modelInput.value = customModel;
+  
   if (!key) {
     setStatus('Not set', '');
   } else {
@@ -101,13 +111,15 @@ async function testConnection() {
   setStatus('Testing connection...', '');
   dom.testConnectionBtn.disabled = true;
 
-  const model = getSetting(LS.model, DEFAULTS.model);
-  const result = await ApiClient.testConnection(key, model);
+  const provider = dom.providerSelect.value || ApiConfig.detectProvider(key);
+  const model = dom.modelInput.value || getSetting(LS.model, 'gpt-4o-mini');
+  
+  const result = await ApiClient.testConnection(key, model, provider);
 
   dom.testConnectionBtn.disabled = false;
 
   if (result.ok) {
-    setStatus('Connected', 'success');
+    setStatus('Connected ✓', 'success');
   } else {
     setStatus(result.message || 'Failed', 'error');
   }
@@ -116,17 +128,25 @@ async function testConnection() {
 function saveApiKey() {
   const key = dom.apiKeyInput.value.trim();
   if (!key) {
-    setStatus('Not set', 'error');
+    setStatus('API key required', 'error');
     return;
   }
+  
   ApiConfig.setApiKey(key);
-  setStatus('Saved', 'success');
+  localStorage.setItem(LS.provider, dom.providerSelect.value);
+  localStorage.setItem(LS.customModel, dom.modelInput.value.trim());
+  
+  setStatus('Saved ✓', 'success');
 }
 
 function clearApiKey() {
   ApiConfig.clearApiKey();
   dom.apiKeyInput.value = '';
-  setStatus('Not set', '');
+  dom.providerSelect.value = '';
+  dom.modelInput.value = '';
+  localStorage.removeItem(LS.provider);
+  localStorage.removeItem(LS.customModel);
+  setStatus('Cleared', '');
 }
 
 function bindAppearanceEvents() {
@@ -185,6 +205,14 @@ function init() {
   dom.saveApiKeyBtn.addEventListener('click', saveApiKey);
   dom.testConnectionBtn.addEventListener('click', testConnection);
   dom.clearApiKeyBtn.addEventListener('click', clearApiKey);
+
+  dom.providerSelect.addEventListener('change', () => {
+    localStorage.setItem(LS.provider, dom.providerSelect.value);
+  });
+
+  dom.modelInput.addEventListener('change', () => {
+    localStorage.setItem(LS.customModel, dom.modelInput.value.trim());
+  });
 
   bindAppearanceEvents();
   bindTabs();

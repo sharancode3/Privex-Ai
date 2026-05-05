@@ -2,12 +2,12 @@ const CACHE_NAME = 'privex-ai-v4';
 
 const APP_SHELL = [
   './',
-  './index.html',
+  './dashboard.html',
   './offline.html',
   './style.css',
   './app.js',
   './settings/',
-  './settings/index.html',
+  './settings/settings.html',
   './settings/settings.js',
   './storage.js',
   './gemini.js',
