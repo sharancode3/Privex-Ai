@@ -229,7 +229,7 @@ button, [role="button"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
+  padding: 16px 24px;
 }
 
 #messages::-webkit-scrollbar { width: 3px; }
@@ -289,13 +289,13 @@ button, [role="button"] {
 /* ── INPUT BAR ──────────────────────────── */
 #input-bar {
   flex-shrink: 0;
-  padding: 12px 24px 16px;
+  padding: 8px 24px 12px;
   border-top: 1px solid #1f1f1f;
   background: #0a0a0a;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 #input-wrap {
@@ -306,12 +306,12 @@ button, [role="button"] {
 
 #messageInput {
   width: 100%;
-  min-height: 48px;
-  max-height: 200px;
+  min-height: 40px;
+  max-height: 150px;
   background: #161616;
   border: 1px solid #2e2e2e;
-  border-radius: 12px;
-  padding: 13px 52px 13px 16px;
+  border-radius: 10px;
+  padding: 10px 40px 10px 14px;
   font-size: 14px;
   color: #f5f5f5;
   resize: none;
@@ -403,14 +403,16 @@ button, [role="button"] {
   display: flex;
   gap: 8px;
   margin: 8px 0;
+  max-width: var(--chat-max-width, 720px);
+  width: 100%;
 }
 .msg.user {
   justify-content: flex-end;
-  width: 100%;
+  align-self: flex-end;
 }
 .msg.ai {
   justify-content: flex-start;
-  width: 100%;
+  align-self: flex-start;
 }
 
 .bubble {
@@ -419,6 +421,8 @@ button, [role="button"] {
   max-width: -webkit-fit-content;
   width: fit-content;
   min-width: 40px;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .msg.user .bubble {
@@ -428,12 +432,14 @@ button, [role="button"] {
   padding: 10px 14px;
   color: #f5f5f5;
   animation: fadeUp 180ms ease both;
+  max-width: 85%;
 }
 
 .msg.ai .bubble {
   background: transparent;
   color: #d4d4d4;
   animation: fadeUp 180ms ease both;
+  max-width: 100%;
 }
 
 .message-content {

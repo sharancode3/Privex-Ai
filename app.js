@@ -589,19 +589,30 @@ function applySavedAppearance() {
 }
 
 function setupInstallPrompt() {
+  // Hide install button by default (PWA feature not needed now)
+  if (dom.installBtn) {
+    dom.installBtn.classList.add('hidden');
+  }
+  
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     state.deferredInstallPrompt = event;
-    dom.installBtn.classList.remove('hidden');
+    if (dom.installBtn) {
+      dom.installBtn.classList.remove('hidden');
+    }
   });
 
-  dom.installBtn.addEventListener('click', async () => {
-    if (!state.deferredInstallPrompt) return;
-    state.deferredInstallPrompt.prompt();
-    await state.deferredInstallPrompt.userChoice;
-    state.deferredInstallPrompt = null;
-    dom.installBtn.classList.add('hidden');
-  });
+  if (dom.installBtn) {
+    dom.installBtn.addEventListener('click', async () => {
+      if (!state.deferredInstallPrompt) return;
+      state.deferredInstallPrompt.prompt();
+      await state.deferredInstallPrompt.userChoice;
+      state.deferredInstallPrompt = null;
+      if (dom.installBtn) {
+        dom.installBtn.classList.add('hidden');
+      }
+    });
+  }
 }
 
 function setupOfflineBanner() {
